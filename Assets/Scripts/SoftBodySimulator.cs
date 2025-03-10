@@ -9,6 +9,7 @@ public class SoftBodySimulator : MonoBehaviour
     public float area = 2f;
     public float puffy = 1.5f;
     public int points = 16;
+    public float maxDisplacement = 0.1f;
     public enum SimulationType
     {
         BlobOnly,

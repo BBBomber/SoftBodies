@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class SoftBodySimulator : MonoBehaviour
@@ -54,20 +55,22 @@ public class BlobTest : MonoBehaviour
     private Blob blob;
     private LineRenderer lineRenderer;
 
-
+    [SerializeField] private int splineResolution = 10; // Number of points between control points
 
     void Start()
     {
-        SoftBodySimulator sim = SoftBodySimulator.Instance;
         // Use the camera's viewport center to get world coordinates
         Vector2 center = Camera.main.ViewportToWorldPoint(new Vector2(0.5f, 0.5f));
-        blob = new Blob(center,sim.points , sim.area, sim.puffy, sim.dampening, sim.gravity); // Smaller radius for testing
+
+        SoftBodySimulator sim = SoftBodySimulator.Instance;
+
+        blob = new Blob(center, sim.points, sim.area, sim.puffy, sim.dampening, sim.gravity); // Pass dampening and gravity
 
         // Setup renderer
         lineRenderer = gameObject.AddComponent<LineRenderer>();
         lineRenderer.startWidth = 0.1f; // Smaller width for better visibility
         lineRenderer.endWidth = 0.1f;
-        lineRenderer.positionCount = blob.Points.Count + 1; // +1 to close the loop
+        lineRenderer.positionCount = blob.Points.Count * splineResolution; // Increase resolution for smoothness
         lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
         lineRenderer.startColor = Color.green;
         lineRenderer.endColor = Color.green;
@@ -83,13 +86,39 @@ public class BlobTest : MonoBehaviour
         // Update blob physics
         blob.Update(mousePosition, isRightMousePressed, isRightMouseReleased, Screen.width, Screen.height);
 
-        // Update rendering
+        // Update rendering using Catmull-Rom splines
+        DrawBlobWithSplines();
+    }
+
+    private void DrawBlobWithSplines()
+    {
+        List<Vector2> points = new List<Vector2>();
         for (int i = 0; i < blob.Points.Count; i++)
         {
-            lineRenderer.SetPosition(i, blob.Points[i].Position);
+            points.Add(blob.Points[i].Position);
         }
-        // Close the loop
-        lineRenderer.SetPosition(blob.Points.Count, blob.Points[0].Position);
+
+        // Close the loop by adding the first few points at the end
+        points.Add(blob.Points[0].Position);
+        points.Add(blob.Points[1].Position);
+        points.Add(blob.Points[2].Position);
+
+        // Calculate Catmull-Rom spline points
+        int index = 0;
+        for (int i = 0; i < blob.Points.Count; i++)
+        {
+            Vector2 p0 = points[i];
+            Vector2 p1 = points[(i + 1) % points.Count];
+            Vector2 p2 = points[(i + 2) % points.Count];
+            Vector2 p3 = points[(i + 3) % points.Count];
+
+            for (int j = 0; j < splineResolution; j++)
+            {
+                float t = j / (float)splineResolution;
+                Vector2 splinePoint = SplineHelper.CatmullRom(p0, p1, p2, p3, t);
+                lineRenderer.SetPosition(index++, splinePoint);
+            }
+        }
     }
 }
 

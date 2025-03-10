@@ -164,10 +164,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dampening: 0.99
-  gravity: 0
+  gravity: 0.0001
   area: 1
   puffy: 1.5
-  points: 4
+  points: 8
   simulationType: 0
 --- !u!1 &519420028
 GameObject:

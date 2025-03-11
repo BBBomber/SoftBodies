@@ -56,15 +56,11 @@ public class BlobPoint
         }
     }
 
-    public void KeepInBounds(float screenWidth, float screenHeight)
+    public void KeepInBounds(Bounds bounds)
     {
-        // Convert screen bounds to world coordinates
-        Vector2 minBounds = Camera.main.ScreenToWorldPoint(Vector2.zero);
-        Vector2 maxBounds = Camera.main.ScreenToWorldPoint(new Vector2(screenWidth, screenHeight));
-
-        // Constrain the position within the screen bounds
-        Position.x = Mathf.Clamp(Position.x, minBounds.x, maxBounds.x);
-        Position.y = Mathf.Clamp(Position.y, minBounds.y, maxBounds.y);
+        // Constrain the position within the provided bounds
+        Position.x = Mathf.Clamp(Position.x, bounds.min.x, bounds.max.x);
+        Position.y = Mathf.Clamp(Position.y, bounds.min.y, bounds.max.y);
     }
 
     public void HandleMouseInteraction(Vector2 mousePosition, float collisionRadius, bool isRightMousePressed, bool isRightMouseReleased)

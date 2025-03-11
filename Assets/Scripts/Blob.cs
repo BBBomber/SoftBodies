@@ -35,7 +35,7 @@ public class Blob
         sim = SoftBodySimulator.Instance;
     }
 
-    public void Update(Vector2 mousePosition, bool isRightMousePressed, bool isRightMouseReleased, float screenWidth, float screenHeight)
+    public void Update(Vector2 mousePosition, bool isRightMousePressed, bool isRightMouseReleased, Bounds bounds)
     {
         // Compute one time step of physics with Verlet integration
         foreach (BlobPoint point in Points)
@@ -79,9 +79,7 @@ public class Blob
                 Vector2 secant = next.Position - prev.Position;
                 Vector2 normal = new Vector2(-secant.y, secant.x).normalized * offset;
 
-
                 // Limit the displacement to prevent instability
-                 // Adjust this value as needed
                 if (normal.magnitude > sim.maxDisplacement)
                 {
                     normal = normal.normalized * sim.maxDisplacement;
@@ -95,12 +93,12 @@ public class Blob
             {
                 point.ApplyDisplacement();
             }
-            //PreventTwisting(); //cursed do not uncomment please
+
             // Handle mouse interaction for dragging and throwing
             foreach (BlobPoint point in Points)
             {
                 point.HandleMouseInteraction(mousePosition, 1f, isRightMousePressed, isRightMouseReleased);
-                point.KeepInBounds(screenWidth, screenHeight);
+                point.KeepInBounds(bounds);
             }
         }
     }
@@ -116,28 +114,5 @@ public class Blob
             area += ((cur.x - next.x) * (cur.y + next.y) / 2);
         }
         return Mathf.Abs(area); // Make sure we return a positive area
-    }
-
-    private void PreventTwisting()
-    {
-        for (int i = 0; i < Points.Count; i++)
-        {
-            BlobPoint prev = Points[i == 0 ? Points.Count - 1 : i - 1];
-            BlobPoint cur = Points[i];
-            BlobPoint next = Points[i == Points.Count - 1 ? 0 : i + 1];
-
-            // Calculate the cross product to detect twisting
-            Vector2 prevToCur = cur.Position - prev.Position;
-            Vector2 curToNext = next.Position - cur.Position;
-            float cross = prevToCur.x * curToNext.y - prevToCur.y * curToNext.x;
-
-            // If the cross product is negative, the points are twisting
-            if (cross < 0)
-            {
-                // Apply a small correction to prevent twisting
-                Vector2 correction = (prevToCur + curToNext).normalized * 0.1f; // Adjust the correction strength
-                cur.AccumulateDisplacement(correction);
-            }
-        }
     }
 }

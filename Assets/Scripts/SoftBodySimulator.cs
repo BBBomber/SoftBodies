@@ -55,17 +55,22 @@ public class BlobTest : MonoBehaviour
 {
     private Blob blob;
     private LineRenderer lineRenderer;
-
+    private CameraController cameraController;
     [SerializeField] private int splineResolution = 10; // Number of points between control points
 
     void Start()
     {
+        // Find or create camera controller
+        cameraController = Camera.main.GetComponent<CameraController>();
+        if (cameraController == null)
+        {
+            cameraController = Camera.main.gameObject.AddComponent<CameraController>();
+        }
+
         // Use the camera's viewport center to get world coordinates
         Vector2 center = Camera.main.ViewportToWorldPoint(new Vector2(0.5f, 0.5f));
-
         SoftBodySimulator sim = SoftBodySimulator.Instance;
-
-        blob = new Blob(center, sim.points, sim.area, sim.puffy, sim.dampening, sim.gravity); // Pass dampening and gravity
+        blob = new Blob(center, sim.points, sim.area, sim.puffy, sim.dampening, sim.gravity);
 
         // Setup renderer
         lineRenderer = gameObject.AddComponent<LineRenderer>();
@@ -84,8 +89,11 @@ public class BlobTest : MonoBehaviour
         bool isRightMousePressed = Input.GetMouseButton(1); // Right mouse button
         bool isRightMouseReleased = Input.GetMouseButtonUp(1); // Right mouse button released
 
+        // Get current screen bounds from camera controller
+        Bounds screenBounds = cameraController.GetScreenBounds();
+
         // Update blob physics
-        blob.Update(mousePosition, isRightMousePressed, isRightMouseReleased, Screen.width, Screen.height);
+        blob.Update(mousePosition, isRightMousePressed, isRightMouseReleased, screenBounds);
 
         // Update rendering using Catmull-Rom splines
         DrawBlobWithSplines();

@@ -6,7 +6,8 @@ public class Blob
     public List<BlobPoint> Points = new List<BlobPoint>();
     public Vector2 Center;
 
-    public float Radius, Area, Circumference, ChordLength;
+    public float Radius, Circumference, ChordLength;
+    public float TargetArea;
     public float dampness, grav, maxDisp;
 
     // Feature toggles from BlobFeatures
@@ -15,7 +16,7 @@ public class Blob
     public Blob(Vector2 origin, int numPoints, float radius, float puffiness, float dampening, float gravity, float maxDisplacement, float maxVelocity, BlobFeatures features)
     {
         Radius = radius;
-        Area = radius * radius * Mathf.PI * puffiness;
+        TargetArea = radius * radius * Mathf.PI * puffiness;
         Circumference = radius * 2 * Mathf.PI;
         ChordLength = Circumference / numPoints;
         dampness = dampening;
@@ -34,13 +35,18 @@ public class Blob
         Center = origin;
     }
 
-    public void UpdateParameters(float dampening, float gravity, float area, float maxDisplacement, float maxVelocity, BlobFeatures newFeatures)
+    public void UpdateParameters(float dampening, float gravity, float radius, float puffiness, float maxDisplacement, float maxVelocity, BlobFeatures newFeatures)
     {
         dampness = dampening;
         grav = gravity;
-        Area = area;
         maxDisp = maxDisplacement;
         features = newFeatures;
+
+        // Update radius-dependent parameters
+        Radius = radius;
+        TargetArea = radius * radius * Mathf.PI * puffiness;
+        Circumference = radius * 2 * Mathf.PI;
+        ChordLength = Circumference / Points.Count;
 
         // Update max velocity for all points
         foreach (BlobPoint point in Points)
@@ -104,17 +110,20 @@ public class Blob
     private void ApplyPressureExpansion()
     {
         float curArea = GetArea();
-        float error = Area - curArea;
-        float offset = error / Circumference;
+        float error = TargetArea - curArea;
 
+        // Calculate pressure force based on area difference
+        float pressureFactor = error / (Circumference * 10f);
+
+        // Apply expansion/contraction forces
         for (int i = 0; i < Points.Count; i++)
         {
-            BlobPoint prev = Points[i == 0 ? Points.Count - 1 : i - 1];
+            BlobPoint prev = Points[(i + Points.Count - 1) % Points.Count];
             BlobPoint cur = Points[i];
-            BlobPoint next = Points[i == Points.Count - 1 ? 0 : i + 1];
+            BlobPoint next = Points[(i + 1) % Points.Count];
 
             Vector2 secant = next.Position - prev.Position;
-            Vector2 normal = new Vector2(-secant.y, secant.x).normalized * offset;
+            Vector2 normal = new Vector2(-secant.y, secant.x).normalized * pressureFactor;
 
             if (normal.magnitude > maxDisp)
             {
@@ -137,14 +146,15 @@ public class Blob
 
     public float GetArea()
     {
+        // Calculate area using shoelace formula
         float area = 0;
         for (int i = 0; i < Points.Count; i++)
         {
             Vector2 cur = Points[i].Position;
-            Vector2 next = Points[i == Points.Count - 1 ? 0 : i + 1].Position;
-            area += ((cur.x - next.x) * (cur.y + next.y) / 2);
+            Vector2 next = Points[(i + 1) % Points.Count].Position;
+            area += (cur.x * next.y - next.x * cur.y);
         }
-        return Mathf.Abs(area);
+        return Mathf.Abs(area) / 2f;
     }
 
     public Vector2 GetCenter()
@@ -159,12 +169,22 @@ public class Blob
 
     public void ResetPosition()
     {
-        Vector2 center = GetCenter();
-        Vector2 offset = Center - center;
+        Vector2 currentCenter = GetCenter();
+        Vector2 offset = Center - currentCenter;
+
         foreach (BlobPoint point in Points)
         {
             point.Position += offset;
             point.PreviousPosition += offset;
+        }
+
+        // Re-initialize the blob shape
+        for (int i = 0; i < Points.Count; i++)
+        {
+            float angle = 2 * Mathf.PI * i / Points.Count - Mathf.PI / 2;
+            Vector2 newPos = Center + new Vector2(Mathf.Cos(angle) * Radius, Mathf.Sin(angle) * Radius);
+            Points[i].Position = newPos;
+            Points[i].PreviousPosition = newPos;
         }
     }
 

@@ -9,12 +9,12 @@ public class BlobParameters
     public float dampening = 0.99f;
 
     [Tooltip("Gravity force applied to blob")]
-    [Range(-10.0f, 5f)]
-    public float gravity = 0.01f;
+    [Range(-5f, 5f)]
+    public float gravity = 1f;
 
-    [Tooltip("Target area of the blob")]
-    [Range(0.5f, 10f)]
-    public float area = 1f;
+    [Tooltip("Initial radius of the blob")]
+    [Range(0.5f, 5f)]
+    public float radius = 1f;
 
     [Tooltip("Puffiness factor for the blob")]
     [Range(1f, 3f)]
@@ -22,10 +22,10 @@ public class BlobParameters
 
     [Tooltip("Number of points in the blob")]
     [Range(8, 64)]
-    public int points = 12;
+    public int points = 16;
 
     [Tooltip("Maximum allowed displacement per physics step")]
-    [Range(-10.0f, 1f)]
+    [Range(-10f, 1f)]
     public float maxDisplacement = 0.1f;
 
     [Tooltip("Collision radius for mouse interaction")]
@@ -106,6 +106,10 @@ public class SoftBodySimulator : MonoBehaviour
     private GameObject blobTestObject;
     private BlobTest activeBlobTest;
 
+    // Cache for parameter comparison
+    private BlobParameters lastParams;
+    private BlobFeatures lastFeatures;
+
     private void Awake()
     {
         // Ensure only one instance of SoftBodySimulator exists
@@ -113,11 +117,45 @@ public class SoftBodySimulator : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
+
+            // Initialize cache
+            lastParams = CloneParameters(blobParams);
+            lastFeatures = CloneFeatures(features);
         }
         else
         {
             Destroy(gameObject); // Destroy duplicate instances
         }
+    }
+
+    private BlobParameters CloneParameters(BlobParameters source)
+    {
+        BlobParameters clone = new BlobParameters();
+        clone.dampening = source.dampening;
+        clone.gravity = source.gravity;
+        clone.radius = source.radius;
+        clone.puffy = source.puffy;
+        clone.points = source.points;
+        clone.maxDisplacement = source.maxDisplacement;
+        clone.mouseInteractionRadius = source.mouseInteractionRadius;
+        clone.maxVelocity = source.maxVelocity;
+        return clone;
+    }
+
+    private BlobFeatures CloneFeatures(BlobFeatures source)
+    {
+        BlobFeatures clone = new BlobFeatures();
+        clone.enableSprings = source.enableSprings;
+        clone.enableCollisions = source.enableCollisions;
+        clone.enableMorphing = source.enableMorphing;
+        clone.enablePressure = source.enablePressure;
+        clone.enableSpringDragging = source.enableSpringDragging;
+        clone.enableSoftBodyCollisions = source.enableSoftBodyCollisions;
+        clone.enableJellyEffect = source.enableJellyEffect;
+        clone.enableResetOnSpace = source.enableResetOnSpace;
+        clone.jellyStrength = source.jellyStrength;
+        clone.bounceFactor = source.bounceFactor;
+        return clone;
     }
 
     void Start()
@@ -127,11 +165,45 @@ public class SoftBodySimulator : MonoBehaviour
 
     void Update()
     {
+        // Check if parameters have changed
+        bool paramsChanged = !AreParametersEqual(blobParams, lastParams);
+        bool featuresChanged = !AreFeaturesEqual(features, lastFeatures);
+
         // Update any active blob test if parameters change
-        if (activeBlobTest != null)
+        if (activeBlobTest != null && (paramsChanged || featuresChanged))
         {
-            activeBlobTest.UpdateParameters();
+            activeBlobTest.UpdateParameters(paramsChanged && blobParams.points != lastParams.points);
+
+            // Update cache
+            lastParams = CloneParameters(blobParams);
+            lastFeatures = CloneFeatures(features);
         }
+    }
+
+    private bool AreParametersEqual(BlobParameters a, BlobParameters b)
+    {
+        return a.dampening == b.dampening &&
+               a.gravity == b.gravity &&
+               a.radius == b.radius &&
+               a.puffy == b.puffy &&
+               a.points == b.points &&
+               a.maxDisplacement == b.maxDisplacement &&
+               a.mouseInteractionRadius == b.mouseInteractionRadius &&
+               a.maxVelocity == b.maxVelocity;
+    }
+
+    private bool AreFeaturesEqual(BlobFeatures a, BlobFeatures b)
+    {
+        return a.enableSprings == b.enableSprings &&
+               a.enableCollisions == b.enableCollisions &&
+               a.enableMorphing == b.enableMorphing &&
+               a.enablePressure == b.enablePressure &&
+               a.enableSpringDragging == b.enableSpringDragging &&
+               a.enableSoftBodyCollisions == b.enableSoftBodyCollisions &&
+               a.enableJellyEffect == b.enableJellyEffect &&
+               a.enableResetOnSpace == b.enableResetOnSpace &&
+               a.jellyStrength == b.jellyStrength &&
+               a.bounceFactor == b.bounceFactor;
     }
 
     private void TestBlob()
@@ -183,7 +255,7 @@ public class BlobTest : MonoBehaviour
         return new Blob(
             center,
             simulator.blobParams.points,
-            simulator.blobParams.area,
+            simulator.blobParams.radius,
             simulator.blobParams.puffy,
             simulator.blobParams.dampening,
             simulator.blobParams.gravity,
@@ -202,12 +274,12 @@ public class BlobTest : MonoBehaviour
         lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
         lineRenderer.startColor = simulator.blobColor;
         lineRenderer.endColor = simulator.blobColor;
+        lineRenderer.loop = true; // Ensure the line forms a closed loop
     }
 
-    public void UpdateParameters()
+    public void UpdateParameters(bool recreateBlob = false)
     {
-        // Check if renderer needs updating (points count changed)
-        if (blob.Points.Count != simulator.blobParams.points)
+        if (recreateBlob)
         {
             // Recreate blob with new point count
             Vector2 currentCenter = blob.GetCenter();
@@ -218,16 +290,19 @@ public class BlobTest : MonoBehaviour
             // Update renderer
             lineRenderer.positionCount = blob.Points.Count * simulator.splineResolution;
         }
-
-        // Update simple parameters without recreating
-        blob.UpdateParameters(
-            simulator.blobParams.dampening,
-            simulator.blobParams.gravity,
-            simulator.blobParams.area,
-            simulator.blobParams.maxDisplacement,
-            simulator.blobParams.maxVelocity,
-            simulator.features
-        );
+        else
+        {
+            // Update simple parameters without recreating
+            blob.UpdateParameters(
+                simulator.blobParams.dampening,
+                simulator.blobParams.gravity,
+                simulator.blobParams.radius,
+                simulator.blobParams.puffy,
+                simulator.blobParams.maxDisplacement,
+                simulator.blobParams.maxVelocity,
+                simulator.features
+            );
+        }
 
         // Update renderer settings
         lineRenderer.startWidth = simulator.lineWidth;
@@ -271,7 +346,7 @@ public class BlobTest : MonoBehaviour
 
         // Close the loop by adding the first few points at the end
         points.Add(blob.Points[0].Position);
-        points.Add(blob.Points[1].Position);
+        points.Add(blob.Points[1 % blob.Points.Count].Position);
         points.Add(blob.Points[2 % blob.Points.Count].Position);
 
         // Calculate Catmull-Rom spline points

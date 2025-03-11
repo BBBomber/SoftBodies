@@ -168,10 +168,38 @@ public class Blob
         {
             foreach (Collider2D collider in solidObjects)
             {
-                if (collider.OverlapPoint(point.Position))
+                // Get the closest point on the collider's surface from the point's position
+                Vector2 closestPoint = collider.ClosestPoint(point.Position);
+
+                // Calculate distance to the closest point
+                float distance = Vector2.Distance(point.Position, closestPoint);
+
+                // If the point is near or inside the collider
+                if (distance < 0.1f || collider.OverlapPoint(point.Position))
                 {
-                    Vector2 pushDir = (point.Position - (Vector2)collider.bounds.center).normalized;
-                    point.AccumulateDisplacement(pushDir * 2f); // Push away
+                    // Calculate the normal direction to push out
+                    Vector2 normal = (point.Position - closestPoint).normalized;
+
+                    // If normal is zero (which happens when point is inside), use direction from center
+                    if (normal.magnitude < 0.001f)
+                    {
+                        normal = (point.Position - (Vector2)collider.bounds.center).normalized;
+
+                        // If still zero (rare case), use a default direction
+                        if (normal.magnitude < 0.001f)
+                        {
+                            normal = Vector2.up;
+                        }
+                    }
+
+                    // Push the point to the surface of the collider plus a small offset
+                    point.Position = closestPoint + normal * 0.1f;
+
+                    // Reflect velocity for bouncing effect but reduce it slightly for damping
+                    Vector2 velocity = point.Position - point.PreviousPosition;
+                    Vector2 reflectedVelocity = Vector2.Reflect(velocity, normal) * 0.8f;
+
+                    point.PreviousPosition = point.Position - reflectedVelocity;
                 }
             }
         }

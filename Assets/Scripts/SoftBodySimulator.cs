@@ -73,6 +73,48 @@ public class BlobFeatures
     public float bounceFactor = 0.8f;
 }
 
+
+
+[System.Serializable]
+public class BlobFace
+{
+    [Tooltip("Enable facial features")]
+    public bool enableFace = true;
+
+    [Tooltip("Eye size relative to blob radius")]
+    [Range(0.05f, 0.3f)]
+    public float eyeSize = 0.15f;
+
+    [Tooltip("Distance between eyes relative to blob radius")]
+    [Range(0.1f, 1f)]
+    public float eyeDistance = 0.5f;
+
+    [Tooltip("Eye height relative to blob center")]
+    [Range(-0.5f, 0.5f)]
+    public float eyeHeight = 0.2f;
+
+    [Tooltip("Mouth width relative to blob radius")]
+    [Range(0.1f, 1f)]
+    public float mouthWidth = 0.4f;
+
+    [Tooltip("Mouth height relative to blob radius")]
+    [Range(-0.5f, 0.2f)]
+    public float mouthHeight = -0.2f;
+
+    [Tooltip("Mouth curvature (0 = flat, 1 = happy, -1 = sad)")]
+    [Range(-1f, 1f)]
+    public float mouthCurvature = 0.3f;
+
+    [Tooltip("Eye color")]
+    public Color eyeColor = Color.black;
+
+    [Tooltip("Mouth color")]
+    public Color mouthColor = Color.black;
+}
+
+
+
+
 public class SoftBodySimulator : MonoBehaviour
 {
     public static SoftBodySimulator Instance { get; private set; }
@@ -94,6 +136,9 @@ public class SoftBodySimulator : MonoBehaviour
 
     [Tooltip("Blob color")]
     public Color blobColor = Color.green;
+
+    [Header("Facial Features")]
+    public BlobFace face = new BlobFace();
 
 
 
@@ -230,7 +275,7 @@ public class SoftBodySimulator : MonoBehaviour
 
 public class BlobTest : MonoBehaviour
 {
-    private Blob blob;
+    public Blob blob;
     private LineRenderer lineRenderer;
     private CameraController cameraController;
     private SoftBodySimulator simulator;
@@ -239,6 +284,136 @@ public class BlobTest : MonoBehaviour
     private List<Collider2D> solidObjects = new List<Collider2D>();
     private List<Blob> allBlobs = new List<Blob>(); // For soft-body collisions
 
+    private GameObject leftEye;
+    private GameObject rightEye;
+    private GameObject mouth;
+
+    private SpriteRenderer leftEyeRenderer;
+    private SpriteRenderer rightEyeRenderer;
+    private LineRenderer mouthRenderer;
+
+    // Call this from your Start method after creating the blob
+    private void SetupFacialFeatures()
+    {
+        // Create eye sprites
+        leftEye = new GameObject("LeftEye");
+        rightEye = new GameObject("RightEye");
+        leftEye.transform.parent = transform;
+        rightEye.transform.parent = transform;
+
+        leftEyeRenderer = leftEye.AddComponent<SpriteRenderer>();
+        rightEyeRenderer = rightEye.AddComponent<SpriteRenderer>();
+
+        // Create a circle sprite for the eyes
+        Texture2D eyeTexture = CreateCircleTexture(32, Color.white);
+        Sprite eyeSprite = Sprite.Create(eyeTexture, new Rect(0, 0, eyeTexture.width, eyeTexture.height),
+                                          new Vector2(0.5f, 0.5f), 100);
+
+        leftEyeRenderer.sprite = eyeSprite;
+        rightEyeRenderer.sprite = eyeSprite;
+        leftEyeRenderer.color = simulator.face.eyeColor;
+        rightEyeRenderer.color = simulator.face.eyeColor;
+
+        // Create mouth
+        mouth = new GameObject("Mouth");
+        mouth.transform.parent = transform;
+        mouthRenderer = mouth.AddComponent<LineRenderer>();
+        mouthRenderer.startWidth = simulator.lineWidth * 0.8f;
+        mouthRenderer.endWidth = simulator.lineWidth * 0.8f;
+        mouthRenderer.material = new Material(Shader.Find("Sprites/Default"));
+        mouthRenderer.startColor = simulator.face.mouthColor;
+        mouthRenderer.endColor = simulator.face.mouthColor;
+        mouthRenderer.positionCount = 10; // Points to draw the mouth curve
+    }
+
+    // Update facial features position - call this from your Update method
+    private void UpdateFacialFeatures()
+    {
+        if (!simulator.face.enableFace || leftEye == null)
+            return;
+
+        Vector2 blobCenter = blob.GetCenter();
+        float blobRadius = blob.Radius;
+
+        // Eye positioning
+        float eyeOffset = blobRadius * simulator.face.eyeDistance * 0.5f;
+        float eyeY = blobCenter.y + blobRadius * simulator.face.eyeHeight;
+
+        leftEye.transform.position = new Vector3(blobCenter.x - eyeOffset, eyeY, -0.1f);
+        rightEye.transform.position = new Vector3(blobCenter.x + eyeOffset, eyeY, -0.1f);
+
+        // Eye scaling based on blob deformation - fixed approach
+        float currentArea = blob.GetArea();
+        float targetArea = blob.TargetArea; // This already includes puffiness from your code
+        float areaRatio = currentArea / targetArea;
+        float eyeScale = blobRadius * simulator.face.eyeSize * Mathf.Sqrt(areaRatio);
+
+        leftEye.transform.localScale = new Vector3(eyeScale, eyeScale, 1);
+        rightEye.transform.localScale = new Vector3(eyeScale, eyeScale, 1);
+
+        // Update eye color
+        if (leftEyeRenderer.color != simulator.face.eyeColor)
+        {
+            leftEyeRenderer.color = simulator.face.eyeColor;
+            rightEyeRenderer.color = simulator.face.eyeColor;
+        }
+
+        // Mouth positioning and shape
+        float mouthY = blobCenter.y + blobRadius * simulator.face.mouthHeight;
+        float mouthWidth = blobRadius * simulator.face.mouthWidth;
+
+        // Set mouth points for a curved line
+        for (int i = 0; i < mouthRenderer.positionCount; i++)
+        {
+            float t = i / (float)(mouthRenderer.positionCount - 1);
+            float x = blobCenter.x - mouthWidth / 2 + mouthWidth * t;
+
+            // Apply curvature
+            float curveY = simulator.face.mouthCurvature * Mathf.Sin(Mathf.PI * t) * blobRadius * 0.2f;
+
+            mouthRenderer.SetPosition(i, new Vector3(x, mouthY + curveY, -0.1f));
+        }
+
+        // Update mouth color and width
+        if (mouthRenderer.startColor != simulator.face.mouthColor)
+        {
+            mouthRenderer.startColor = simulator.face.mouthColor;
+            mouthRenderer.endColor = simulator.face.mouthColor;
+        }
+
+        mouthRenderer.startWidth = simulator.lineWidth * 0.8f;
+        mouthRenderer.endWidth = simulator.lineWidth * 0.8f;
+    }
+
+    // Helper method to create a circular texture for the eyes
+    private Texture2D CreateCircleTexture(int size, Color color)
+    {
+        Texture2D texture = new Texture2D(size, size);
+        Color[] pixels = new Color[size * size];
+
+        float radius = size / 2f;
+        Vector2 center = new Vector2(radius, radius);
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float distance = Vector2.Distance(new Vector2(x, y), center);
+                if (distance <= radius)
+                {
+                    pixels[y * size + x] = color;
+                }
+                else
+                {
+                    pixels[y * size + x] = Color.clear;
+                }
+            }
+        }
+
+        texture.SetPixels(pixels);
+        texture.Apply();
+        return texture;
+    }
     void Start()
     {
         simulator = SoftBodySimulator.Instance;
@@ -260,7 +435,7 @@ public class BlobTest : MonoBehaviour
 
         // Setup renderer
         SetupRenderer();
-
+        SetupFacialFeatures();
         // Find all colliders in the scene
         solidObjects.AddRange(FindObjectsByType<Collider2D>(FindObjectsSortMode.None));
     }
@@ -325,6 +500,14 @@ public class BlobTest : MonoBehaviour
         lineRenderer.startColor = simulator.blobColor;
         lineRenderer.endColor = simulator.blobColor;
         lineRenderer.positionCount = blob.Points.Count * simulator.splineResolution;
+
+        if (leftEye != null)
+        {
+            leftEyeRenderer.color = simulator.face.eyeColor;
+            rightEyeRenderer.color = simulator.face.eyeColor;
+            mouthRenderer.startColor = simulator.face.mouthColor;
+            mouthRenderer.endColor = simulator.face.mouthColor;
+        }
     }
 
     void Update()
@@ -350,6 +533,7 @@ public class BlobTest : MonoBehaviour
 
         // Update rendering using Catmull-Rom splines
         DrawBlobWithSplines();
+        UpdateFacialFeatures();
     }
 
     private void DrawBlobWithSplines()

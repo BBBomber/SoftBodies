@@ -10,6 +10,7 @@ public class BlobPoint
     private bool isDragging = false; // Track if the point is being dragged
     private Vector2 dragOffset; // Offset between the mouse and the point's position
 
+
     public BlobPoint(Vector2 position)
     {
         Position = position;
@@ -22,21 +23,13 @@ public class BlobPoint
     {
         Vector2 temp = Position;
         Vector2 velocity = (Position - PreviousPosition) * dampingFactor;
-
-        // Limit the maximum velocity to prevent instability
-        float maxVelocity = 5f; // Adjust this value as needed
-        if (velocity.magnitude > maxVelocity)
-        {
-            velocity = velocity.normalized * maxVelocity;
-        }
-
         Position += velocity;
         PreviousPosition = temp;
     }
 
     public void ApplyGravity(float gravityForce = 1f)
     {
-        Position += new Vector2(0, -gravityForce); // Note: using negative Y as gravity in Unity
+        Position += new Vector2(0, -gravityForce);
     }
 
     public void AccumulateDisplacement(Vector2 offset)
@@ -58,7 +51,6 @@ public class BlobPoint
 
     public void KeepInBounds(Bounds bounds)
     {
-        // Constrain the position within the provided bounds
         Position.x = Mathf.Clamp(Position.x, bounds.min.x, bounds.max.x);
         Position.y = Mathf.Clamp(Position.y, bounds.min.y, bounds.max.y);
     }

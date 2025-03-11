@@ -36,7 +36,7 @@ public class SoftBodySimulator : MonoBehaviour
     void Start()
     {
 
-                TestBlob();
+        TestBlob();
 
     }
 
@@ -58,6 +58,9 @@ public class BlobTest : MonoBehaviour
     private CameraController cameraController;
     [SerializeField] private int splineResolution = 10; // Number of points between control points
 
+    private List<Collider2D> solidObjects = new List<Collider2D>();
+    private List<Blob> allBlobs = new List<Blob>(); // For soft-body collisions
+
     void Start()
     {
         // Find or create camera controller
@@ -72,6 +75,8 @@ public class BlobTest : MonoBehaviour
         SoftBodySimulator sim = SoftBodySimulator.Instance;
         blob = new Blob(center, sim.points, sim.area, sim.puffy, sim.dampening, sim.gravity);
 
+        allBlobs.Add(blob);
+
         // Setup renderer
         lineRenderer = gameObject.AddComponent<LineRenderer>();
         lineRenderer.startWidth = 0.1f; // Smaller width for better visibility
@@ -80,6 +85,8 @@ public class BlobTest : MonoBehaviour
         lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
         lineRenderer.startColor = Color.green;
         lineRenderer.endColor = Color.green;
+
+        solidObjects.AddRange(FindObjectsByType<Collider2D>(FindObjectsSortMode.None));
     }
 
     void Update()
@@ -93,7 +100,7 @@ public class BlobTest : MonoBehaviour
         Bounds screenBounds = cameraController.GetScreenBounds();
 
         // Update blob physics
-        blob.Update(mousePosition, isRightMousePressed, isRightMouseReleased, screenBounds);
+        blob.Update(mousePosition, isRightMousePressed, isRightMouseReleased, screenBounds, solidObjects, allBlobs);
 
         // Update rendering using Catmull-Rom splines
         DrawBlobWithSplines();

@@ -95,6 +95,12 @@ public class SoftBodySimulator : MonoBehaviour
     [Tooltip("Blob color")]
     public Color blobColor = Color.green;
 
+
+
+    private float lastLineWidth;
+    private Color lastBlobColor;
+    private int lastSplineResolution;
+
     public enum SimulationType
     {
         BlobOnly
@@ -121,6 +127,9 @@ public class SoftBodySimulator : MonoBehaviour
             // Initialize cache
             lastParams = CloneParameters(blobParams);
             lastFeatures = CloneFeatures(features);
+            lastLineWidth = lineWidth;
+            lastBlobColor = blobColor;
+            lastSplineResolution = splineResolution;
         }
         else
         {
@@ -168,15 +177,21 @@ public class SoftBodySimulator : MonoBehaviour
         // Check if parameters have changed
         bool paramsChanged = !AreParametersEqual(blobParams, lastParams);
         bool featuresChanged = !AreFeaturesEqual(features, lastFeatures);
-
+        // Check if rendering properties changed
+        bool renderingChanged = lineWidth != lastLineWidth ||
+                                blobColor != lastBlobColor ||
+                                splineResolution != lastSplineResolution;
         // Update any active blob test if parameters change
-        if (activeBlobTest != null && (paramsChanged || featuresChanged))
+        if (activeBlobTest != null && (paramsChanged || featuresChanged || renderingChanged))
         {
             activeBlobTest.UpdateParameters(paramsChanged && blobParams.points != lastParams.points);
 
             // Update cache
             lastParams = CloneParameters(blobParams);
             lastFeatures = CloneFeatures(features);
+            lastLineWidth = lineWidth;
+            lastBlobColor = blobColor;
+            lastSplineResolution = splineResolution;
         }
     }
 
@@ -304,11 +319,12 @@ public class BlobTest : MonoBehaviour
             );
         }
 
-        // Update renderer settings
+        // Always update rendering properties
         lineRenderer.startWidth = simulator.lineWidth;
         lineRenderer.endWidth = simulator.lineWidth;
         lineRenderer.startColor = simulator.blobColor;
         lineRenderer.endColor = simulator.blobColor;
+        lineRenderer.positionCount = blob.Points.Count * simulator.splineResolution;
     }
 
     void Update()

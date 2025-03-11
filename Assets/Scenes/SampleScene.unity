@@ -163,12 +163,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f90a94255daabad47aa83edf598c0bab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  dampening: 0.99
-  gravity: 0.01
-  area: 1
-  puffy: 1.5
-  points: 12
-  maxDisplacement: 0.1
+  blobParams:
+    dampening: 0.99
+    gravity: 0.01
+    area: 1
+    puffy: 1.5
+    points: 12
+    maxDisplacement: 0.1
+    mouseInteractionRadius: 1
+    maxVelocity: 3
+  features:
+    enableSprings: 1
+    enableCollisions: 1
+    enableMorphing: 0
+    enablePressure: 1
+    enableSpringDragging: 1
+    enableSoftBodyCollisions: 0
+    enableJellyEffect: 0
+    enableResetOnSpace: 1
+    jellyStrength: 0.1
+    bounceFactor: 0.8
+  splineResolution: 10
+  lineWidth: 0.1
+  blobColor: {r: 0, g: 1, b: 0, a: 1}
   simulationType: 0
 --- !u!1 &519420028
 GameObject:

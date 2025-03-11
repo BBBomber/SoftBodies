@@ -1,5 +1,5 @@
-using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class Blob
 {
@@ -7,21 +7,12 @@ public class Blob
     public Vector2 Center;
 
     public float Radius, Area, Circumference, ChordLength;
-    public float dampness, grav;
+    public float dampness, grav, maxDisp;
 
-    private SoftBodySimulator sim;
+    // Feature toggles from BlobFeatures
+    private BlobFeatures features;
 
-    // Feature Toggles
-    public bool enableSprings = true;
-    public bool enableCollisions = true;
-    public bool enableMorphing = false;
-    public bool enablePressure = true;
-    public bool enableSpringDragging = true;
-    public bool enableSoftBodyCollisions = false;
-    public bool enableJellyEffect = false;
-    public bool enableResetOnSpace = true;
-
-    public Blob(Vector2 origin, int numPoints, float radius, float puffiness, float dampening, float gravity)
+    public Blob(Vector2 origin, int numPoints, float radius, float puffiness, float dampening, float gravity, float maxDisplacement, float maxVelocity, BlobFeatures features)
     {
         Radius = radius;
         Area = radius * radius * Mathf.PI * puffiness;
@@ -29,22 +20,38 @@ public class Blob
         ChordLength = Circumference / numPoints;
         dampness = dampening;
         grav = gravity;
+        maxDisp = maxDisplacement;
+        this.features = features;
 
         Points = new List<BlobPoint>();
         for (int i = 0; i < numPoints; i++)
         {
             float angle = 2 * Mathf.PI * i / numPoints - Mathf.PI / 2;
             Vector2 offset = new Vector2(Mathf.Cos(angle) * radius, Mathf.Sin(angle) * radius);
-            Points.Add(new BlobPoint(origin + offset));
+            Points.Add(new BlobPoint(origin + offset, maxVelocity));
         }
 
-        sim = SoftBodySimulator.Instance;
         Center = origin;
     }
 
-    public void Update(Vector2 mousePosition, bool isRightMousePressed, bool isRightMouseReleased, Bounds bounds, List<Collider2D> solidObjects, List<Blob> otherBlobs)
+    public void UpdateParameters(float dampening, float gravity, float area, float maxDisplacement, float maxVelocity, BlobFeatures newFeatures)
     {
-        if (enableResetOnSpace && Input.GetKeyDown(KeyCode.Space))
+        dampness = dampening;
+        grav = gravity;
+        Area = area;
+        maxDisp = maxDisplacement;
+        features = newFeatures;
+
+        // Update max velocity for all points
+        foreach (BlobPoint point in Points)
+        {
+            point.UpdateParameters(maxVelocity);
+        }
+    }
+
+    public void Update(Vector2 mousePosition, bool isRightMousePressed, bool isRightMouseReleased, Bounds bounds, List<Collider2D> solidObjects, List<Blob> otherBlobs, float mouseInteractionRadius)
+    {
+        if (features.enableResetOnSpace && Input.GetKeyDown(KeyCode.Space))
         {
             ResetPosition();
         }
@@ -57,19 +64,20 @@ public class Blob
 
         for (int j = 0; j < 10; j++)
         {
-            if (enableSprings) ApplySpringForces();
-            if (enablePressure) ApplyPressureExpansion();
-            if (enableJellyEffect) ApplyJellyConstraints();
+            if (features.enableSprings) ApplySpringForces();
+            if (features.enablePressure) ApplyPressureExpansion();
+            if (features.enableJellyEffect) ApplyJellyConstraints();
 
             foreach (BlobPoint point in Points)
             {
                 point.ApplyDisplacement();
-                if (enableSpringDragging) point.HandleMouseInteraction(mousePosition, 1f, isRightMousePressed, isRightMouseReleased);
+                if (features.enableSpringDragging)
+                    point.HandleMouseInteraction(mousePosition, mouseInteractionRadius, isRightMousePressed, isRightMouseReleased);
                 point.KeepInBounds(bounds);
             }
 
-            if (enableCollisions) HandleCollisions(solidObjects);
-            if (enableSoftBodyCollisions) HandleSoftBodyCollisions(otherBlobs);
+            if (features.enableCollisions) HandleCollisions(solidObjects);
+            if (features.enableSoftBodyCollisions) HandleSoftBodyCollisions(otherBlobs);
         }
     }
 
@@ -108,22 +116,22 @@ public class Blob
             Vector2 secant = next.Position - prev.Position;
             Vector2 normal = new Vector2(-secant.y, secant.x).normalized * offset;
 
-            if (normal.magnitude > sim.maxDisplacement)
+            if (normal.magnitude > maxDisp)
             {
-                normal = normal.normalized * sim.maxDisplacement;
+                normal = normal.normalized * maxDisp;
             }
 
             cur.AccumulateDisplacement(normal);
         }
     }
 
-    private void ApplyJellyConstraints() //no idea idc not tested
+    private void ApplyJellyConstraints()
     {
         Vector2 center = GetCenter();
         foreach (BlobPoint point in Points)
         {
             Vector2 diff = center - point.Position;
-            point.AccumulateDisplacement(diff * 0.1f);
+            point.AccumulateDisplacement(diff * features.jellyStrength);
         }
     }
 
@@ -162,7 +170,7 @@ public class Blob
 
     private void HandleCollisions(List<Collider2D> solidObjects)
     {
-        if (!enableCollisions) return;
+        if (!features.enableCollisions) return;
 
         foreach (BlobPoint point in Points)
         {
@@ -197,7 +205,7 @@ public class Blob
 
                     // Reflect velocity for bouncing effect but reduce it slightly for damping
                     Vector2 velocity = point.Position - point.PreviousPosition;
-                    Vector2 reflectedVelocity = Vector2.Reflect(velocity, normal) * 0.8f;
+                    Vector2 reflectedVelocity = Vector2.Reflect(velocity, normal) * features.bounceFactor;
 
                     point.PreviousPosition = point.Position - reflectedVelocity;
                 }
@@ -205,44 +213,9 @@ public class Blob
         }
     }
 
-    private void HandleSemiSolidCollisions(List<Collider2D> solidObjects) //blob slowly goes through idk why or how fuck it
+    private void HandleSoftBodyCollisions(List<Blob> otherBlobs)
     {
-        if (!enableCollisions) return;
-
-        foreach (BlobPoint point in Points)
-        {
-            foreach (Collider2D collider in solidObjects)
-            {
-                if (collider.OverlapPoint(point.Position))
-                {
-                    // Get the closest point on the collider's surface
-                    Vector2 closestPoint = collider.ClosestPoint(point.Position);
-
-                    // If we're inside the collider, move the point to the closest surface point
-                    if (closestPoint != point.Position)
-                    {
-                        // Set the position directly to the surface, similar to how KeepInBounds works
-                        point.Position = closestPoint;
-
-                        // Update the previous position to maintain momentum along the surface
-                        Vector2 velocity = point.Position - point.PreviousPosition;
-                        Vector2 normal = ((Vector2)collider.bounds.center - closestPoint).normalized;
-                        Vector2 tangent = new Vector2(-normal.y, normal.x);
-
-                        // Project velocity onto the tangent to maintain sliding motion
-                        float tangentVelocity = Vector2.Dot(velocity, tangent);
-                        Vector2 newVelocity = tangent * tangentVelocity * 0.9f; // Add a bit of friction
-
-                        point.PreviousPosition = point.Position - newVelocity;
-                    }
-                }
-            }
-        }
-    }
-
-    private void HandleSoftBodyCollisions(List<Blob> otherBlobs) //not tested idc
-    {
-        if (!enableSoftBodyCollisions) return;
+        if (!features.enableSoftBodyCollisions) return;
 
         foreach (Blob other in otherBlobs)
         {

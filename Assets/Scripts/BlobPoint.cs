@@ -6,26 +6,30 @@ public class BlobPoint
     public Vector2 PreviousPosition;
     public Vector2 Displacement;
     public int DisplacementWeight;
+    private bool isDragging = false;
+    private Vector2 dragOffset;
+    private float maxVelocity;
 
-    private bool isDragging = false; // Track if the point is being dragged
-    private Vector2 dragOffset; // Offset between the mouse and the point's position
-
-
-    public BlobPoint(Vector2 position)
+    public BlobPoint(Vector2 position, float maxVelocity)
     {
         Position = position;
         PreviousPosition = position;
         Displacement = Vector2.zero;
         DisplacementWeight = 0;
+        this.maxVelocity = maxVelocity;
     }
 
-    public void VerletIntegrate(float dampingFactor = 0.99f)
+    public void UpdateParameters(float newMaxVelocity)
+    {
+        this.maxVelocity = newMaxVelocity;
+    }
+
+    public void VerletIntegrate(float dampingFactor)
     {
         Vector2 temp = Position;
         Vector2 velocity = (Position - PreviousPosition) * dampingFactor;
 
         // Cap velocity to avoid sudden movement
-        float maxVelocity = 3f; // Lower value to prevent explosion
         if (velocity.magnitude > maxVelocity)
         {
             velocity = velocity.normalized * maxVelocity;
@@ -35,7 +39,7 @@ public class BlobPoint
         PreviousPosition = temp;
     }
 
-    public void ApplyGravity(float gravityForce = 1f)
+    public void ApplyGravity(float gravityForce)
     {
         Position += new Vector2(0, -gravityForce);
     }
@@ -63,9 +67,9 @@ public class BlobPoint
         Position.y = Mathf.Clamp(Position.y, bounds.min.y, bounds.max.y);
     }
 
-    public void HandleMouseInteraction(Vector2 mousePosition, float collisionRadius, bool isRightMousePressed, bool isRightMouseReleased)
+    public void HandleMouseInteraction(Vector2 mousePosition, float interactionRadius, bool isRightMousePressed, bool isRightMouseReleased)
     {
-        if (isRightMousePressed && Vector2.Distance(Position, mousePosition) < collisionRadius)
+        if (isRightMousePressed && !isDragging && Vector2.Distance(Position, mousePosition) < interactionRadius)
         {
             // Start dragging
             isDragging = true;

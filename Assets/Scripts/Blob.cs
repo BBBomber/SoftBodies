@@ -117,7 +117,7 @@ public class Blob
         }
     }
 
-    private void ApplyJellyConstraints()
+    private void ApplyJellyConstraints() //no idea idc not tested
     {
         Vector2 center = GetCenter();
         foreach (BlobPoint point in Points)
@@ -205,7 +205,42 @@ public class Blob
         }
     }
 
-    private void HandleSoftBodyCollisions(List<Blob> otherBlobs)
+    private void HandleSemiSolidCollisions(List<Collider2D> solidObjects) //blob slowly goes through idk why or how fuck it
+    {
+        if (!enableCollisions) return;
+
+        foreach (BlobPoint point in Points)
+        {
+            foreach (Collider2D collider in solidObjects)
+            {
+                if (collider.OverlapPoint(point.Position))
+                {
+                    // Get the closest point on the collider's surface
+                    Vector2 closestPoint = collider.ClosestPoint(point.Position);
+
+                    // If we're inside the collider, move the point to the closest surface point
+                    if (closestPoint != point.Position)
+                    {
+                        // Set the position directly to the surface, similar to how KeepInBounds works
+                        point.Position = closestPoint;
+
+                        // Update the previous position to maintain momentum along the surface
+                        Vector2 velocity = point.Position - point.PreviousPosition;
+                        Vector2 normal = ((Vector2)collider.bounds.center - closestPoint).normalized;
+                        Vector2 tangent = new Vector2(-normal.y, normal.x);
+
+                        // Project velocity onto the tangent to maintain sliding motion
+                        float tangentVelocity = Vector2.Dot(velocity, tangent);
+                        Vector2 newVelocity = tangent * tangentVelocity * 0.9f; // Add a bit of friction
+
+                        point.PreviousPosition = point.Position - newVelocity;
+                    }
+                }
+            }
+        }
+    }
+
+    private void HandleSoftBodyCollisions(List<Blob> otherBlobs) //not tested idc
     {
         if (!enableSoftBodyCollisions) return;
 

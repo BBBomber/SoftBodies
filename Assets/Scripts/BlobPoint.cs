@@ -23,6 +23,14 @@ public class BlobPoint
     {
         Vector2 temp = Position;
         Vector2 velocity = (Position - PreviousPosition) * dampingFactor;
+
+        // Cap velocity to avoid sudden movement
+        float maxVelocity = 3f; // Lower value to prevent explosion
+        if (velocity.magnitude > maxVelocity)
+        {
+            velocity = velocity.normalized * maxVelocity;
+        }
+
         Position += velocity;
         PreviousPosition = temp;
     }

@@ -502,6 +502,14 @@ public class BlobTest : MonoBehaviour
         UpdateDimples();
         UpdateMustache();
         UpdateTongue();
+
+        if (leftEye != null)
+        {
+            leftEyeRenderer.color = simulator.face.eyeColor;
+            rightEyeRenderer.color = simulator.face.eyeColor;
+            mouthRenderer.startColor = simulator.face.mouthColor;
+            mouthRenderer.endColor = simulator.face.mouthColor;
+        }
     }
 
     // Update facial features position - call this from your Update method
@@ -617,7 +625,7 @@ public class BlobTest : MonoBehaviour
             }
         }
 
-        // Handle expression changes
+        /*// Handle expression changes
         if (simulator.face.expressionChangeFrequency > 0)
         {
             expressionTimer -= Time.deltaTime;
@@ -627,39 +635,50 @@ public class BlobTest : MonoBehaviour
                 ChangeRandomExpression();
                 expressionTimer = Random.Range(5f, 15f) / simulator.face.expressionChangeFrequency;
             }
-        }
+        }*/
     }
 
-    private void ChangeRandomExpression()
+    private void ChangeRandomExpression(int expressionType)
     {
         // Randomly change face elements for a new expression
-        int expressionType = Random.Range(0, 5);
+        //int expressionType = Random.Range(0, 5);
 
         switch (expressionType)
         {
             case 0: // Happy
                 simulator.face.mouthCurvature = Random.Range(0.5f, 0.9f);
                 simulator.face.eyebrowAngle = Random.Range(0f, 0.5f);
+                simulator.face.eyeDistance = 0.5f;
                 break;
             case 1: // Sad
                 simulator.face.mouthCurvature = Random.Range(-0.9f, -0.4f);
                 simulator.face.eyebrowAngle = Random.Range(-0.5f, 0f);
+                simulator.face.eyeDistance = 0.5f;
                 break;
             case 2: // Surprised
-                simulator.face.mouthType = MouthType.OpenSmile;
+                simulator.face.mouthType = MouthType.CircleShape;
                 simulator.face.eyeType = EyeType.Surprised;
                 simulator.face.eyebrowAngle = Random.Range(0.6f, 1f);
+                simulator.face.eyeDistance = 0.5f;
                 break;
             case 3: // Angry
-                simulator.face.mouthType = MouthType.Frown;
+                simulator.face.mouthType = MouthType.Square;
                 simulator.face.eyeType = EyeType.Angry;
                 simulator.face.eyebrowAngle = Random.Range(-1f, -0.5f);
+                simulator.face.eyeDistance = 0.5f;
                 break;
             case 4: // Normal
                 simulator.face.mouthType = MouthType.Curve;
                 simulator.face.eyeType = EyeType.Circle;
                 simulator.face.mouthCurvature = Random.Range(-0.2f, 0.2f);
                 simulator.face.eyebrowAngle = 0f;
+                simulator.face.eyeDistance = 0.5f;
+                break;
+            case 5:
+                simulator.face.mouthType = MouthType.Zigzag;
+                simulator.face.eyeType = EyeType.Sleepy;
+                simulator.face.eyeDistance = 0.8f;
+                simulator.face.mouthCurvature = 0.6f;
                 break;
         }
 
@@ -1464,13 +1483,7 @@ public class BlobTest : MonoBehaviour
         lineRenderer.endColor = simulator.blobColor;
         lineRenderer.positionCount = blob.Points.Count * simulator.splineResolution;
 
-        if (leftEye != null)
-        {
-            leftEyeRenderer.color = simulator.face.eyeColor;
-            rightEyeRenderer.color = simulator.face.eyeColor;
-            mouthRenderer.startColor = simulator.face.mouthColor;
-            mouthRenderer.endColor = simulator.face.mouthColor;
-        }
+        
     }
 
     void Update()
@@ -1479,6 +1492,28 @@ public class BlobTest : MonoBehaviour
         Vector2 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         bool isRightMousePressed = Input.GetMouseButton(1); // Right mouse button
         bool isRightMouseReleased = Input.GetMouseButtonUp(1); // Right mouse button released
+
+
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+        {
+            ChangeRandomExpression(1);
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha2))
+        {
+            ChangeRandomExpression(2);
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha3))
+        {
+            ChangeRandomExpression(3);
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha4))
+        {
+            ChangeRandomExpression(4);
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha5))
+        {
+            ChangeRandomExpression(5);
+        }
 
         // Get current screen bounds from camera controller
         Bounds screenBounds = cameraController.GetScreenBounds();

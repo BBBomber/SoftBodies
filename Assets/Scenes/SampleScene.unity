@@ -237,11 +237,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91c95c48a83efd6449e1b97e2b268e7f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  baseJumpForce: 60
+  baseJumpForce: 26
   maxChargeMultiplier: 5
   chargeSpeed: 2.05
-  squishFactor: 0.367
-  stretchFactor: 0.601
+  squishFactor: 0.78
+  stretchFactor: 1
   jumpCooldown: 0.5
   groundLayer:
     serializedVersion: 2

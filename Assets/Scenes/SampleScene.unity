@@ -129,6 +129,7 @@ GameObject:
   m_Component:
   - component: {fileID: 138242297}
   - component: {fileID: 138242298}
+  - component: {fileID: 138242299}
   m_Layer: 0
   m_Name: SoftBodySim
   m_TagString: Untagged
@@ -223,6 +224,33 @@ MonoBehaviour:
     idleAnimationSpeed: 1
     expressionChangeFrequency: 0
   simulationType: 0
+  controller: {fileID: 138242299}
+--- !u!114 &138242299
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 138242296}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91c95c48a83efd6449e1b97e2b268e7f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  baseJumpForce: 60
+  maxChargeMultiplier: 5
+  chargeSpeed: 2.05
+  squishFactor: 0.367
+  stretchFactor: 0.601
+  jumpCooldown: 0.5
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 64
+  groundCheckDistance: 0.2
+  useScreenBoundariesAsGround: 1
+  screenEdgeThreshold: 0.1
+  moveSpeed: 5
+  airControlFactor: 0.5
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -471,7 +499,7 @@ GameObject:
   - component: {fileID: 632681148}
   - component: {fileID: 632681147}
   - component: {fileID: 632681146}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Square (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -605,7 +633,7 @@ GameObject:
   - component: {fileID: 1463576974}
   - component: {fileID: 1463576973}
   - component: {fileID: 1463576972}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Circle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -729,7 +757,7 @@ GameObject:
   - component: {fileID: 1488009648}
   - component: {fileID: 1488009647}
   - component: {fileID: 1488009646}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Square (2)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -863,7 +891,7 @@ GameObject:
   - component: {fileID: 1489719763}
   - component: {fileID: 1489719762}
   - component: {fileID: 1489719761}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Triangle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1001,7 +1029,7 @@ GameObject:
   - component: {fileID: 1758136315}
   - component: {fileID: 1758136314}
   - component: {fileID: 1758136313}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Square
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1124,37 +1152,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &2065416156
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2065416157}
-  m_Layer: 0
-  m_Name: GameObject
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2065416157
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2065416156}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.08104512, y: -0.067172535, z: -0.002132007}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -1162,7 +1159,6 @@ SceneRoots:
   - {fileID: 519420032}
   - {fileID: 619394802}
   - {fileID: 138242297}
-  - {fileID: 2065416157}
   - {fileID: 1758136315}
   - {fileID: 1488009648}
   - {fileID: 632681148}

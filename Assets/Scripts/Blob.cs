@@ -239,7 +239,7 @@ public class Blob
 
         foreach (Blob other in otherBlobs)
         {
-            if (other == this) continue; // Don't collide with itself
+            //if (other == this) continue; // Don't collide with itself
 
             foreach (BlobPoint p1 in Points)
             {

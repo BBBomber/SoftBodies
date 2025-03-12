@@ -235,14 +235,18 @@ public class SlimeCharacterController : MonoBehaviour
 
         if (Mathf.Abs(horizontalInput) > 0.1f)
         {
-            // Apply horizontal force to all points
-            float moveFactor = isGrounded ? 1f : airControlFactor;
-            Vector2 moveForce = new Vector2(horizontalInput * moveSpeed * moveFactor * Time.deltaTime, 0);
-
-            foreach (BlobPoint point in controlledBlob.Points)
+            if(!isCharging)
             {
-                point.Position += moveForce;
+                // Apply horizontal force to all points
+                float moveFactor = isGrounded ? 1f : airControlFactor;
+                Vector2 moveForce = new Vector2(horizontalInput * moveSpeed * moveFactor * Time.deltaTime, 0);
+
+                foreach (BlobPoint point in controlledBlob.Points)
+                {
+                    point.Position += moveForce;
+                }
             }
+            
         }
     }
 

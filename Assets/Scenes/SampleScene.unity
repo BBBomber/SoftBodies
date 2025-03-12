@@ -166,9 +166,9 @@ MonoBehaviour:
   blobParams:
     dampening: 0.99
     gravity: 0.01
-    area: 1
-    puffy: 1.5
-    points: 12
+    radius: 1.75
+    puffy: 2
+    points: 24
     maxDisplacement: 0.1
     mouseInteractionRadius: 1
     maxVelocity: 3
@@ -186,6 +186,42 @@ MonoBehaviour:
   splineResolution: 10
   lineWidth: 0.1
   blobColor: {r: 0, g: 1, b: 0, a: 1}
+  face:
+    enableFace: 1
+    eyeType: 0
+    eyeSize: 0.25
+    eyeDistance: 0.5
+    eyeHeight: 0.2
+    eyeColor: {r: 0, g: 0, b: 0, a: 1}
+    pupilColor: {r: 1, g: 1, b: 1, a: 1}
+    blinkRate: 3
+    mouthType: 0
+    mouthWidth: 0.4
+    mouthHeight: -0.2
+    mouthCurvature: 0.3
+    mouthColor: {r: 0, g: 0, b: 0, a: 1}
+    enableTongue: 0
+    tongueColor: {r: 1, g: 0.5, b: 0.5, a: 1}
+    tongueSize: 0.5
+    eyebrowType: 0
+    eyebrowThickness: 1.5
+    eyebrowColor: {r: 0, g: 0, b: 0, a: 1}
+    eyebrowHeight: 0.1
+    eyebrowAngle: 0
+    enableGlasses: 0
+    glassesStyle: 0
+    glassesColor: {r: 0.1, g: 0.1, b: 0.1, a: 1}
+    glassesSize: 1.2
+    enableDimples: 0
+    dimpleSize: 0.05
+    dimpleColor: {r: 1, g: 0.8, b: 0.8, a: 1}
+    enableMustache: 0
+    mustacheStyle: 0
+    mustacheColor: {r: 0, g: 0, b: 0, a: 1}
+    mustacheSize: 1
+    enableIdleAnimation: 1
+    idleAnimationSpeed: 1
+    expressionChangeFrequency: 0
   simulationType: 0
 --- !u!1 &519420028
 GameObject:

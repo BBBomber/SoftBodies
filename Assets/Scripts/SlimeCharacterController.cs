@@ -121,6 +121,11 @@ public class SlimeCharacterController : MonoBehaviour
     public float dampingFactor = 0.1f;
 
     private float fixedTentacleLength;
+
+
+    private Collider2D grappledObject; // Store the grappled object's Rigidbody2D
+    private Vector2 localGrapplePoint; // Store the local position of the grapple point relative to the grappled object
+
     void Start()
     {
         // Create a child object for the tentacle visuals
@@ -530,6 +535,19 @@ public class SlimeCharacterController : MonoBehaviour
                 isTentacleActive = true;
                 tentacleTarget = hit.point;
 
+                // Store the grappled object's Rigidbody2D (if it has one)
+                grappledObject = hit.collider.GetComponent<Collider2D>();
+
+                // Calculate the local grapple point relative to the grappled object
+                if (grappledObject != null)
+                {
+                    localGrapplePoint = grappledObject.transform.InverseTransformPoint(tentacleTarget);
+                }
+                else
+                {
+                    localGrapplePoint = tentacleTarget; // Fallback for static colliders
+                }
+
                 // Store the initial length of the tentacle
                 fixedTentacleLength = Vector2.Distance(controlledBlob.GetCenter(), tentacleTarget);
 
@@ -545,6 +563,7 @@ public class SlimeCharacterController : MonoBehaviour
         if (Input.GetMouseButtonUp(0))
         {
             isTentacleActive = false;
+            grappledObject = null; // Clear the grappled object reference
 
             // Disable the tentacle visuals
             if (tentacleRenderer != null)
@@ -553,14 +572,22 @@ public class SlimeCharacterController : MonoBehaviour
             }
         }
 
-        // Update tentacle visuals if active
-        if (isTentacleActive && tentacleRenderer != null)
+        // Update tentacle visuals and target position if active
+        if (isTentacleActive)
         {
-            tentacleRenderer.SetPosition(0, controlledBlob.GetCenter());
-            tentacleRenderer.SetPosition(1, tentacleTarget);
+            // Update the tentacle target position if the grappled object is moving
+            if (grappledObject != null)
+            {
+                tentacleTarget = grappledObject.transform.TransformPoint(localGrapplePoint);
+            }
+
+            // Update the tentacle visuals
+            if (tentacleRenderer != null)
+            {
+                tentacleRenderer.SetPosition(0, controlledBlob.GetCenter());
+                tentacleRenderer.SetPosition(1, tentacleTarget);
+            }
         }
-
-
     }
     private void ApplyRopePhysics()
     {

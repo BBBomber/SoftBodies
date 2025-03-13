@@ -385,6 +385,15 @@ MonoBehaviour:
   screenEdgeThreshold: 0.1
   moveSpeed: 1
   airControlFactor: 0.5
+  stuckLaunchForce: 2.5
+  maxStuckCompressionFactor: 0.5
+  stuckChargeColor: {r: 1, g: 0.3, b: 0.3, a: 1}
+  colliderCheckRadius: 2
+  tentacleMaxLength: 50
+  tentaclePullForce: 1
+  maxTentacleDuration: 10
+  minTentacleDistance: 0.5
+  swingConstraintForce: 10
 --- !u!1 &209730345
 GameObject:
   m_ObjectHideFlags: 0

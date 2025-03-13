@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Collections;
 
 public class SlimeCharacterController : MonoBehaviour
 {
@@ -87,10 +88,47 @@ public class SlimeCharacterController : MonoBehaviour
     [Range(0.5f, 10f)]
     public float colliderCheckRadius = 2f; // Adjust this based on your blob's size
 
+    [Header("Tentacle Grapple")]
+    public float tentacleMaxLength = 5f;
+    public float tentaclePullForce = 10f;
+    private bool isTentacleActive = false;
+    private Vector2 tentacleTarget;
+    private LineRenderer tentacleRenderer;
+    private GameObject tentacleVisuals;
+
+    [Header("Tentacle Swing Settings")]
+    [Tooltip("Maximum duration the tentacle stays active")]
+    public float maxTentacleDuration = 3f;
+
+    [Tooltip("Minimum distance from the grapple point before the tentacle breaks")]
+    public float minTentacleDistance = 0.5f;
+
+    [Tooltip("Force applied to keep the slime within the tentacle's length")]
+    public float swingConstraintForce = 10f;
+
+    private float tentacleLength; // Length of the tentacle
+    private float tentacleTimer; // Timer for the tentacle's active duration
+    private float fixedTentacleLength;
 
     void Start()
     {
-        
+        // Create a child object for the tentacle visuals
+        tentacleVisuals = new GameObject("TentacleVisuals");
+        tentacleVisuals.transform.SetParent(transform); // Make it a child of the slime
+        tentacleVisuals.transform.localPosition = Vector3.zero; // Reset position
+
+        // Add LineRenderer to the child object
+        tentacleRenderer = tentacleVisuals.AddComponent<LineRenderer>();
+        tentacleRenderer.startWidth = 0.1f;
+        tentacleRenderer.endWidth = 0.05f;
+        tentacleRenderer.material = new Material(Shader.Find("Sprites/Default"));
+        tentacleRenderer.positionCount = 2;
+        tentacleRenderer.enabled = false; // Disable by default
+
+    }
+
+    private void FixedUpdate()
+    {
         
     }
 
@@ -162,6 +200,11 @@ public class SlimeCharacterController : MonoBehaviour
 
         HandleStuckState();
 
+        HandleTentacleGrapple();
+        if (isTentacleActive)
+        {
+            ConstrainSlimeToCircularPath();
+        }
         // Update visual feedback
         UpdateVisuals();
     }
@@ -452,6 +495,76 @@ public class SlimeCharacterController : MonoBehaviour
 
         // Also modify the blob's internal pressure by changing the puffiness
         softBodySim.blobParams.puffy = originalPuffy * verticalScale;
+    }
+
+    private void HandleTentacleGrapple()
+    {
+        // Left mouse button pressed: Shoot tentacle
+        if (Input.GetMouseButtonDown(0))
+        {
+            // Get mouse position in world coordinates
+            Vector2 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+
+            // Cast a ray to see if there's something to grapple onto
+            RaycastHit2D hit = Physics2D.Raycast(
+                controlledBlob.GetCenter(),
+                mouseWorldPos - controlledBlob.GetCenter(),
+                tentacleMaxLength,
+                groundLayer
+            );
+
+            if (hit.collider != null)
+            {
+                // Found something to grapple!
+                isTentacleActive = true;
+                tentacleTarget = hit.point;
+
+                // Store the initial length of the tentacle
+                fixedTentacleLength = Vector2.Distance(controlledBlob.GetCenter(), tentacleTarget);
+
+                // Enable the tentacle visuals
+                if (tentacleRenderer != null)
+                {
+                    tentacleRenderer.enabled = true;
+                }
+            }
+        }
+
+        // Left mouse button released: Break tentacle
+        if (Input.GetMouseButtonUp(0))
+        {
+            isTentacleActive = false;
+
+            // Disable the tentacle visuals
+            if (tentacleRenderer != null)
+            {
+                tentacleRenderer.enabled = false;
+            }
+        }
+
+        // Update tentacle visuals if active
+        if (isTentacleActive && tentacleRenderer != null)
+        {
+            tentacleRenderer.SetPosition(0, controlledBlob.GetCenter());
+            tentacleRenderer.SetPosition(1, tentacleTarget);
+        }
+    }
+
+    private void ConstrainSlimeToCircularPath()
+    {
+        // Get the slime's center and the direction to the grapple point
+        Vector2 slimeCenter = controlledBlob.GetCenter();
+        Vector2 directionToGrapple = (tentacleTarget - slimeCenter).normalized;
+
+        // Project the slime's position onto the circular path
+        Vector2 constrainedPosition = tentacleTarget - directionToGrapple * fixedTentacleLength;
+
+        // Move all blob points to maintain the fixed length
+        Vector2 offset = constrainedPosition - slimeCenter;
+        foreach (BlobPoint point in controlledBlob.Points)
+        {
+            point.Position += offset;
+        }
     }
 
     private void ResetBlobShape()

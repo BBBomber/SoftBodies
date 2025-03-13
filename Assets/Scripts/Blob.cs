@@ -259,4 +259,14 @@ public class Blob
             }
         }
     }
+
+    public Vector2 GetPreviousCenter()
+    {
+        Vector2 sum = Vector2.zero;
+        foreach (BlobPoint point in Points)
+        {
+            sum += point.PreviousPosition;
+        }
+        return sum / Points.Count;
+    }
 }

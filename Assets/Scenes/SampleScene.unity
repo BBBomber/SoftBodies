@@ -371,7 +371,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91c95c48a83efd6449e1b97e2b268e7f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  baseJumpForce: 50
+  baseJumpForce: 24
   maxChargeMultiplier: 5
   chargeSpeed: 3
   squishFactor: 0.78
@@ -394,6 +394,9 @@ MonoBehaviour:
   maxTentacleDuration: 10
   minTentacleDistance: 0.5
   swingConstraintForce: 10
+  maxStretchFactor: 1.2
+  springForce: 50
+  dampingFactor: 0.1
 --- !u!1 &209730345
 GameObject:
   m_ObjectHideFlags: 0
@@ -948,7 +951,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   zoomSpeed: 0.5
   minZoom: 1
-  maxZoom: 5
+  maxZoom: 10
 --- !u!1 &619394800
 GameObject:
   m_ObjectHideFlags: 0

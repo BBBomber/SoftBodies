@@ -106,10 +106,21 @@ public class SlimeCharacterController : MonoBehaviour
     [Tooltip("Force applied to keep the slime within the tentacle's length")]
     public float swingConstraintForce = 10f;
 
-    private float tentacleLength; // Length of the tentacle
-    private float tentacleTimer; // Timer for the tentacle's active duration
-    private float fixedTentacleLength;
 
+    [Header("Rope Physics Settings")]
+    [Tooltip("Maximum stretch allowed for the rope (as a multiplier of the initial length)")]
+    [Range(1f, 2f)]
+    public float maxStretchFactor = 1.2f; // 20% stretch
+
+    [Tooltip("Strength of the spring force pulling the slime back to the rope's length")]
+    [Range(1f, 100f)]
+    public float springForce = 50f;
+
+    [Tooltip("Damping factor to reduce oscillations in the rope")]
+    [Range(0f, 1f)]
+    public float dampingFactor = 0.1f;
+
+    private float fixedTentacleLength;
     void Start()
     {
         // Create a child object for the tentacle visuals
@@ -203,7 +214,7 @@ public class SlimeCharacterController : MonoBehaviour
         HandleTentacleGrapple();
         if (isTentacleActive)
         {
-            ConstrainSlimeToCircularPath();
+            ApplyRopePhysics();
         }
         // Update visual feedback
         UpdateVisuals();
@@ -548,8 +559,40 @@ public class SlimeCharacterController : MonoBehaviour
             tentacleRenderer.SetPosition(0, controlledBlob.GetCenter());
             tentacleRenderer.SetPosition(1, tentacleTarget);
         }
-    }
 
+
+    }
+    private void ApplyRopePhysics()
+    {
+        // Get the slime's center and the direction to the grapple point
+        Vector2 slimeCenter = controlledBlob.GetCenter();
+        Vector2 directionToGrapple = (tentacleTarget - slimeCenter).normalized;
+        float currentDistance = Vector2.Distance(slimeCenter, tentacleTarget);
+
+        // Calculate the stretch ratio
+        float stretchRatio = currentDistance / fixedTentacleLength;
+
+        // If the rope is stretched beyond its limit, apply a spring force
+        if (stretchRatio > 1f)
+        {
+            // Calculate the spring force (Hooke's Law: F = k * x)
+            float stretchAmount = currentDistance - fixedTentacleLength;
+            Vector2 springForceVector = directionToGrapple * stretchAmount * springForce;
+
+            // Apply damping to reduce oscillations
+            Vector2 slimeVelocity = (slimeCenter - controlledBlob.GetPreviousCenter()) / Time.deltaTime;
+            Vector2 dampingForce = -slimeVelocity * dampingFactor;
+
+            // Apply the net force to all blob points
+            Vector2 netForce = springForceVector + dampingForce;
+            foreach (BlobPoint point in controlledBlob.Points)
+            {
+                point.Position += springForceVector * Time.deltaTime;
+            }
+        }
+
+       
+    }
     private void ConstrainSlimeToCircularPath()
     {
         // Get the slime's center and the direction to the grapple point

@@ -432,13 +432,13 @@ public class BlobTest : MonoBehaviour
     private int lastMustacheStyle;
     private bool lastTongueEnabled;
 
-
+    CameraController cam;
 
 
     void Start()
     {
         simulator = SoftBodySimulator.Instance;
-
+        cam = Camera.main?.GetComponent<CameraController>();
         // Find or create camera controller
         cameraController = Camera.main.GetComponent<CameraController>();
         if (cameraController == null)
@@ -454,12 +454,13 @@ public class BlobTest : MonoBehaviour
         blob = CreateBlob(center);
         SoftBodySimulator.Instance.controller.Initialize(this);
         allBlobs.Add(blob);
-
+        
         // Setup renderer
         SetupRenderer();
         SetupFacialFeatures();
         // Find all colliders in the scene
         solidObjects.AddRange(FindObjectsByType<Collider2D>(FindObjectsSortMode.None));
+        cam.target = this.mouth.transform;
     }
 
     private Blob CreateBlob(Vector2 center)

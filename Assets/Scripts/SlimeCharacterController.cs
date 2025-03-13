@@ -518,7 +518,7 @@ public class SlimeCharacterController : MonoBehaviour
         {
             // Get mouse position in world coordinates
             Vector2 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-
+            Debug.Log("Cast ray");
             // Cast a ray to see if there's something to grapple onto
             RaycastHit2D hit = Physics2D.Raycast(
                 controlledBlob.GetCenter(),
@@ -532,7 +532,7 @@ public class SlimeCharacterController : MonoBehaviour
                 // Found something to grapple!
                 isTentacleActive = true;
                 tentacleTarget = hit.point;
-
+                Debug.Log("ray Hit");
                 // Store the grappled object's Rigidbody2D (if it has one)
                 grappledObject = hit.collider.GetComponent<Collider2D>();
 

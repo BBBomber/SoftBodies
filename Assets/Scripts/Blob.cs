@@ -14,6 +14,8 @@ public class Blob
     private BlobFeatures features;
     SoftBodySimulator sim;
 
+    private Dictionary<Collider2D, Vector2> lastColliderPositions = new Dictionary<Collider2D, Vector2>();
+
     public Blob(Vector2 origin, int numPoints, float radius, float puffiness, float dampening, float gravity, float maxDisplacement, float maxVelocity, BlobFeatures features)
     {
         Radius = radius;
@@ -194,6 +196,9 @@ public class Blob
     {
         if (!features.enableCollisions) return;
 
+        // Track which colliders we're in contact with this frame
+        HashSet<Collider2D> currentColliders = new HashSet<Collider2D>();
+
         foreach (BlobPoint point in Points)
         {
             foreach (Collider2D collider in solidObjects)
@@ -207,6 +212,9 @@ public class Blob
                 // If the point is near or inside the collider
                 if (distance < 0.1f || collider.OverlapPoint(point.Position))
                 {
+                    // Add to our tracking set
+                    currentColliders.Add(collider);
+
                     // Calculate the normal direction to push out
                     Vector2 normal = (point.Position - closestPoint).normalized;
 
@@ -230,8 +238,56 @@ public class Blob
                     Vector2 reflectedVelocity = Vector2.Reflect(velocity, normal) * features.bounceFactor;
 
                     point.PreviousPosition = point.Position - reflectedVelocity;
+
+                    // If on top of the collider (normal pointing upward)
+                    if (normal.y > 0.7f) // Approximately pointing up
+                    {
+                        // Apply movement from the platform
+                        ApplyPlatformMovement(point, collider);
+                    }
                 }
             }
+        }
+
+        // Update last positions for next frame
+        foreach (Collider2D collider in currentColliders)
+        {
+            lastColliderPositions[collider] = collider.bounds.center;
+        }
+
+        // Clean up colliders we're no longer in contact with
+        List<Collider2D> toRemove = new List<Collider2D>();
+        foreach (var kvp in lastColliderPositions)
+        {
+            if (!currentColliders.Contains(kvp.Key))
+            {
+                toRemove.Add(kvp.Key);
+            }
+        }
+
+        foreach (var collider in toRemove)
+        {
+            lastColliderPositions.Remove(collider);
+        }
+    }
+
+    // Add this method to your Blob class
+    private void ApplyPlatformMovement(BlobPoint point, Collider2D platform)
+    {
+        // If we have a previous position for this platform
+        if (lastColliderPositions.TryGetValue(platform, out Vector2 lastPos))
+        {
+            // Calculate how much the platform moved
+            Vector2 platformDelta = (Vector2)platform.bounds.center - lastPos;
+
+            // Apply that movement to the blob point
+            point.Position += platformDelta;
+            point.PreviousPosition += platformDelta;
+        }
+        else
+        {
+            // First contact with this platform, just record its position
+            lastColliderPositions[platform] = platform.bounds.center;
         }
     }
 

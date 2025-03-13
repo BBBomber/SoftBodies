@@ -72,6 +72,22 @@ public class SlimeCharacterController : MonoBehaviour
     private Color chargeColor = new Color(1f, 0.7f, 0.3f);
     private LineRenderer lineRenderer;
 
+
+    [Header("Stuck Mechanics")]
+    [Range(0.5f, 5f)]
+    public float stuckLaunchForce = 2.5f;
+    [Range(0.5f, 3f)]
+    public float maxStuckCompressionFactor = 0.3f;
+    public Color stuckChargeColor = new Color(1f, 0.3f, 0.3f); // Bright red
+
+    private bool isStuck = false;
+    private float stuckChargeTime = 0f;
+
+    [Tooltip("Radius to check for nearby colliders")]
+    [Range(0.5f, 10f)]
+    public float colliderCheckRadius = 2f; // Adjust this based on your blob's size
+
+
     void Start()
     {
         
@@ -90,7 +106,7 @@ public class SlimeCharacterController : MonoBehaviour
             originalRadius = new Vector2(controlledBlob.Radius, controlledBlob.Radius);
             originalPuffy = SoftBodySimulator.Instance.blobParams.puffy;
             normalColor = SoftBodySimulator.Instance.blobColor;
-
+            colliderCheckRadius = controlledBlob.Radius;
             // Get camera controller for screen bounds
             cameraController = Camera.main.GetComponent<CameraController>();
             if (cameraController == null)
@@ -143,6 +159,8 @@ public class SlimeCharacterController : MonoBehaviour
 
         // Handle jump charging
         HandleJumpCharge();
+
+        HandleStuckState();
 
         // Update visual feedback
         UpdateVisuals();
@@ -307,6 +325,111 @@ public class SlimeCharacterController : MonoBehaviour
         }
     }
 
+    private void HandleStuckState()
+    {
+        // Check if stuck (contact with small colliders)
+        isStuck = CheckIfStuck();
+
+        if (isStuck)
+        {
+            // Get jump direction from arrow keys
+            Vector2 dirInput = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+            if (dirInput.magnitude > 0.1f)
+            {
+                jumpDirection = dirInput.normalized;
+            }
+            else if (!isCharging)
+            {
+
+            }
+
+            // Jump charge (Space bar)
+            if (Input.GetKey(KeyCode.LeftShift) && isStuck && jumpCooldownTimer <= 0)
+            {
+                isCharging = true;
+                currentChargeTime += Time.deltaTime * chargeSpeed;
+
+                // Squish the slime vertically and stretch horizontally
+                float squishAmount = Mathf.Lerp(1f, squishFactor, Mathf.Clamp01(currentChargeTime / maxChargeMultiplier));
+                float stretchAmount = Mathf.Lerp(1f, stretchFactor, Mathf.Clamp01(currentChargeTime / maxChargeMultiplier));
+
+                // Apply squish by modifying blob parameters
+                ModifyBlobShape(squishAmount, stretchAmount);
+
+                // Change color while charging
+                SoftBodySimulator.Instance.blobColor = Color.Lerp(normalColor, chargeColor, Mathf.Clamp01(currentChargeTime / maxChargeMultiplier));
+            }
+
+            // Jump release
+            if (Input.GetKeyUp(KeyCode.LeftShift) && isCharging)
+            {
+                // Calculate jump force
+                float jumpMultiplier = Mathf.Clamp(currentChargeTime, 1f, maxChargeMultiplier);
+                Vector2 jumpForce = jumpDirection * baseJumpForce * jumpMultiplier;
+
+                // Apply jump force to all points
+                foreach (BlobPoint point in controlledBlob.Points)
+                {
+                    point.Position += jumpForce * Time.deltaTime;
+                    point.PreviousPosition = point.Position - jumpForce * Time.deltaTime; // Apply as velocity
+                }
+
+                // Reset charging state
+                isCharging = false;
+                currentChargeTime = 0f;
+                jumpCooldownTimer = jumpCooldown;
+
+                // Reset blob shape
+                ResetBlobShape();
+
+                // Reset color
+                SoftBodySimulator.Instance.blobColor = normalColor;
+            }
+        }
+    }
+
+    private bool CheckIfStuck()
+    {
+        if (controlledBlob == null) return false;
+        if (isGrounded)
+        {
+            return false;
+        }
+        // Get the blob's center and radius
+        Vector2 blobCenter = controlledBlob.GetCenter();
+        float blobRadius = controlledBlob.Radius;
+
+        // Get all colliders within the check radius
+        Collider2D[] nearbyColliders = Physics2D.OverlapCircleAll(blobCenter, blobRadius, groundLayer);
+
+        // Check if any collider is inside the blob
+        foreach (Collider2D collider in nearbyColliders)
+        {
+            if (IsColliderInsideBlob(collider))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool IsColliderInsideBlob(Collider2D collider)
+    {
+        if (controlledBlob == null || collider == null) return false;
+
+        // Get the blob's center and radius
+        Vector2 blobCenter = controlledBlob.GetCenter();
+        float blobRadius = controlledBlob.Radius;
+
+        // Get the closest point on the collider to the blob's center
+        Vector2 closestPointOnCollider = collider.ClosestPoint(blobCenter);
+
+        // Check if the closest point is inside the blob's radius
+        float distanceToCollider = Vector2.Distance(blobCenter, closestPointOnCollider);
+        return distanceToCollider < blobRadius;
+    }
+
     private void ModifyBlobShape(float verticalScale, float horizontalScale)
     {
         // Temporarily modify the blob's physical properties
@@ -369,6 +492,7 @@ public class SlimeCharacterController : MonoBehaviour
             GUILayout.Label("Charge: " + (currentChargeTime / maxChargeMultiplier * 100).ToString("F0") + "%");
         }
         GUILayout.Label("Jump Direction: " + jumpDirection.ToString());
+        GUILayout.Label("Stuck: " + isStuck);
         GUILayout.EndArea();
     }
 }

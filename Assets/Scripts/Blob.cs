@@ -12,6 +12,7 @@ public class Blob
 
     // Feature toggles from BlobFeatures
     private BlobFeatures features;
+    SoftBodySimulator sim;
 
     public Blob(Vector2 origin, int numPoints, float radius, float puffiness, float dampening, float gravity, float maxDisplacement, float maxVelocity, BlobFeatures features)
     {
@@ -33,6 +34,7 @@ public class Blob
         }
 
         Center = origin;
+        sim = SoftBodySimulator.Instance;
     }
 
     public void UpdateParameters(float dampening, float gravity, float radius, float puffiness, float maxDisplacement, float maxVelocity, BlobFeatures newFeatures)
@@ -67,7 +69,7 @@ public class Blob
             point.VerletIntegrate(dampness);
             point.ApplyGravity(grav);
         }
-
+        //int substeps = Mathf.Max(10, Mathf.CeilToInt( sim.blobParams.maxVelocity * 5));
         for (int j = 0; j < 10; j++)
         {
             if (features.enableSprings) ApplySpringForces();

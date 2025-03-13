@@ -460,7 +460,7 @@ public class BlobTest : MonoBehaviour
         SetupFacialFeatures();
         // Find all colliders in the scene
         solidObjects.AddRange(FindObjectsByType<Collider2D>(FindObjectsSortMode.None));
-        cam.target = this.mouth.transform;
+        cam.target = this.transform;
     }
 
     private Blob CreateBlob(Vector2 center)
@@ -570,6 +570,8 @@ public class BlobTest : MonoBehaviour
             simulator.blobParams.mouseInteractionRadius
         );
 
+        Vector2 blobCenter = blob.GetCenter();
+        transform.position = blobCenter;
         // Update rendering using Catmull-Rom splines
         DrawBlobWithSplines();
         UpdateFacialFeatures();

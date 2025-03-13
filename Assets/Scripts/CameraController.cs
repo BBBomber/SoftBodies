@@ -16,12 +16,13 @@ public class CameraController : MonoBehaviour
     public bool lockX = false;       // Lock X-axis movement
     public bool lockY = false;       // Lock Y-axis movement
     public float followSmoothness = 0.1f; // Camera follow speed
-
+    public float yFollowOffset = 5f;
     private Camera mainCamera;
     private float startingOrthoSize;
     private Vector2 originalScreenSize;
     private Vector3 velocity = Vector3.zero; // For smooth damp
 
+    
     void Start()
     {
         mainCamera = GetComponent<Camera>() ?? Camera.main;
@@ -63,7 +64,7 @@ public class CameraController : MonoBehaviour
         if (lockX) targetPosition.x = transform.position.x;
         if (lockY) targetPosition.y = transform.position.y;
 
-        transform.position = Vector3.SmoothDamp(transform.position, new Vector3(targetPosition.x, targetPosition.y, transform.position.z), ref velocity, followSmoothness);
+        transform.position = Vector3.SmoothDamp(transform.position, new Vector3(targetPosition.x, targetPosition.y + yFollowOffset, transform.position.z), ref velocity, followSmoothness);
         mainCamera.orthographicSize = followZoom;
     }
 

@@ -363,7 +363,7 @@ public class SlimeCharacterController : MonoBehaviour
             // Calculate jump force
             float jumpMultiplier = Mathf.Clamp(currentChargeTime, 1f, maxChargeMultiplier);
             Vector2 jumpForce = jumpDirection * baseJumpForce * jumpMultiplier;
-
+            Debug.Log(jumpForce);
             // Apply jump force to all points
             foreach (BlobPoint point in controlledBlob.Points)
             {
@@ -425,7 +425,7 @@ public class SlimeCharacterController : MonoBehaviour
                 // Calculate jump force
                 float jumpMultiplier = Mathf.Clamp(currentChargeTime, 1f, maxChargeMultiplier);
                 Vector2 jumpForce = jumpDirection * baseJumpForce * jumpMultiplier;
-
+                Debug.Log(jumpForce);
                 // Apply jump force to all points
                 foreach (BlobPoint point in controlledBlob.Points)
                 {
@@ -456,7 +456,7 @@ public class SlimeCharacterController : MonoBehaviour
         }
         // Get the blob's center and radius
         Vector2 blobCenter = controlledBlob.GetCenter();
-        float blobRadius = controlledBlob.Radius;
+        float blobRadius = controlledBlob.Radius + 5;
 
         // Get all colliders within the check radius
         Collider2D[] nearbyColliders = Physics2D.OverlapCircleAll(blobCenter, blobRadius, groundLayer);
@@ -481,12 +481,10 @@ public class SlimeCharacterController : MonoBehaviour
         Vector2 blobCenter = controlledBlob.GetCenter();
         float blobRadius = controlledBlob.Radius;
 
-        // Get the closest point on the collider to the blob's center
-        Vector2 closestPointOnCollider = collider.ClosestPoint(blobCenter);
-
-        // Check if the closest point is inside the blob's radius
-        float distanceToCollider = Vector2.Distance(blobCenter, closestPointOnCollider);
-        return distanceToCollider < blobRadius;
+        // Check if the collider's bounds overlap with the blob's radius
+        Bounds colliderBounds = collider.bounds;
+        Vector2 closestPoint = colliderBounds.ClosestPoint(blobCenter);
+        return Vector2.Distance(blobCenter, closestPoint) < blobRadius;
     }
 
     private void ModifyBlobShape(float verticalScale, float horizontalScale)

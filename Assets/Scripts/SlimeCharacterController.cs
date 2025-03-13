@@ -593,22 +593,6 @@ public class SlimeCharacterController : MonoBehaviour
 
        
     }
-    private void ConstrainSlimeToCircularPath()
-    {
-        // Get the slime's center and the direction to the grapple point
-        Vector2 slimeCenter = controlledBlob.GetCenter();
-        Vector2 directionToGrapple = (tentacleTarget - slimeCenter).normalized;
-
-        // Project the slime's position onto the circular path
-        Vector2 constrainedPosition = tentacleTarget - directionToGrapple * fixedTentacleLength;
-
-        // Move all blob points to maintain the fixed length
-        Vector2 offset = constrainedPosition - slimeCenter;
-        foreach (BlobPoint point in controlledBlob.Points)
-        {
-            point.Position += offset;
-        }
-    }
 
     private void ResetBlobShape()
     {

@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -257,12 +258,12 @@ public class SoftBodySimulator : MonoBehaviour
     public SimulationType simulationType = SimulationType.BlobOnly;
 
     // References to test objects
-    private GameObject blobTestObject;
-    private  BlobTest activeBlobTest;
+    [SerializeField] private GameObject blobTestObject;
+    [SerializeField] private  BlobTest activeBlobTest;
 
     // Cache for parameter comparison
-    private BlobParameters lastParams;
-    private BlobFeatures lastFeatures;
+    [SerializeField] private BlobParameters lastParams;
+    [SerializeField] private BlobFeatures lastFeatures;
 
 
      public SlimeCharacterController controller;
@@ -273,7 +274,7 @@ public class SoftBodySimulator : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            //DontDestroyOnLoad(gameObject);
 
             // Initialize cache
             lastParams = CloneParameters(blobParams);
@@ -320,7 +321,11 @@ public class SoftBodySimulator : MonoBehaviour
 
     void Start()
     {
+        // Initialize cache
+
         TestBlob();
+       
+
     }
 
     void Update()
@@ -378,6 +383,8 @@ public class SoftBodySimulator : MonoBehaviour
         activeBlobTest = blobTestObject.AddComponent<BlobTest>();
         
     }
+
+
 }
 
 public class BlobTest : MonoBehaviour
@@ -385,7 +392,7 @@ public class BlobTest : MonoBehaviour
     public Blob blob;
     private LineRenderer lineRenderer;
     private CameraController cameraController;
-    private SoftBodySimulator simulator;
+    [SerializeField] private SoftBodySimulator simulator;
     private Vector2 initialCenter;
 
     private List<Collider2D> solidObjects = new List<Collider2D>();
@@ -438,6 +445,7 @@ public class BlobTest : MonoBehaviour
     void Start()
     {
         simulator = SoftBodySimulator.Instance;
+       
         cam = Camera.main?.GetComponent<CameraController>();
         // Find or create camera controller
         cameraController = Camera.main.GetComponent<CameraController>();
@@ -461,10 +469,16 @@ public class BlobTest : MonoBehaviour
         // Find all colliders in the scene
         solidObjects.AddRange(FindObjectsByType<Collider2D>(FindObjectsSortMode.None));
         cam.target = this.transform;
+
     }
+
 
     private Blob CreateBlob(Vector2 center)
     {
+
+        
+
+
         return new Blob(
             center,
             simulator.blobParams.points,

@@ -323,7 +323,7 @@ public class SoftBodySimulator : MonoBehaviour
         TestBlob();
     }
 
-    void Update()
+    private void FixedUpdate()
     {
         // Check if parameters have changed
         bool paramsChanged = !AreParametersEqual(blobParams, lastParams);
@@ -344,6 +344,11 @@ public class SoftBodySimulator : MonoBehaviour
             lastBlobColor = blobColor;
             lastSplineResolution = splineResolution;
         }
+    }
+
+    void Update()
+    {
+        
     }
 
     private bool AreParametersEqual(BlobParameters a, BlobParameters b)
@@ -529,10 +534,7 @@ public class BlobTest : MonoBehaviour
 
     void Update()
     {
-        // Get mouse input
-        Vector2 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        bool isRightMousePressed = Input.GetMouseButton(1); // Right mouse button
-        bool isRightMouseReleased = Input.GetMouseButtonUp(1); // Right mouse button released
+       
 
 
         if (Input.GetKeyDown(KeyCode.Alpha1))
@@ -556,9 +558,23 @@ public class BlobTest : MonoBehaviour
             ChangeRandomExpression(5);
         }
 
+        
+
+        
+
+        
+    }
+
+    private void FixedUpdate()
+    {
+
+        // Get mouse input
+        Vector2 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        bool isRightMousePressed = Input.GetMouseButton(1); // Right mouse button
+        bool isRightMouseReleased = Input.GetMouseButtonUp(1); // Right mouse button released
+
         // Get current screen bounds from camera controller
         Bounds screenBounds = cameraController.GetScreenBounds();
-
         // Update blob physics
         blob.Update(
             mousePosition,

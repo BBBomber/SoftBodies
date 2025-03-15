@@ -87,8 +87,8 @@ public class BlobPoint
             {
                 // Stop dragging and apply velocity
                 isDragging = false;
-                Vector2 velocity = (Position - PreviousPosition) / Time.deltaTime;
-                PreviousPosition = Position - velocity * Time.deltaTime; // Apply velocity for throwing
+                Vector2 velocity = (Position - PreviousPosition) / Time.fixedDeltaTime;
+                PreviousPosition = Position - velocity * Time.fixedDeltaTime; // Apply velocity for throwing
             }
         }
     }

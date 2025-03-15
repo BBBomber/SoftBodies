@@ -16,6 +16,8 @@ public class Blob
 
     private Dictionary<Collider2D, Vector2> lastColliderPositions = new Dictionary<Collider2D, Vector2>();
 
+    
+
     public Blob(Vector2 origin, int numPoints, float radius, float puffiness, float dampening, float gravity, float maxDisplacement, float maxVelocity, BlobFeatures features)
     {
         Radius = radius;
@@ -37,6 +39,8 @@ public class Blob
 
         Center = origin;
         sim = SoftBodySimulator.Instance;
+
+        Time.fixedDeltaTime = 0.01f;
     }
 
     public void UpdateParameters(float dampening, float gravity, float radius, float puffiness, float maxDisplacement, float maxVelocity, BlobFeatures newFeatures)
@@ -68,8 +72,8 @@ public class Blob
 
         foreach (BlobPoint point in Points)
         {
-            point.VerletIntegrate(dampness);
-            point.ApplyGravity(grav);
+            point.VerletIntegrate(dampness  );
+            point.ApplyGravity(grav );
         }
         //int substeps = Mathf.Max(10, Mathf.CeilToInt( sim.blobParams.maxVelocity * 5));
         for (int j = 0; j < 10; j++)

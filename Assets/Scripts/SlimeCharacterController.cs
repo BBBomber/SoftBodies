@@ -68,6 +68,15 @@ public class SlimeCharacterController : MonoBehaviour
     private Bounds screenBounds;
     private CameraController cameraController;
 
+    // Input variables moved from FixedUpdate to Update
+    private float horizontalInput;
+    private Vector2 dirInput;
+    private bool jumpKeyPressed;
+    private bool jumpKeyReleased;
+    private bool shootTentaclePressed;
+    private bool breakTentaclePressed;
+    private Vector2 mouseWorldPos;
+
     // Visual feedback
     private Color normalColor;
     private Color chargeColor = new Color(1f, 0.7f, 0.3f);
@@ -126,6 +135,8 @@ public class SlimeCharacterController : MonoBehaviour
     private Collider2D grappledObject; // Store the grappled object's Rigidbody2D
     private Vector2 localGrapplePoint; // Store the local position of the grapple point relative to the grappled object
 
+
+
     void Start()
     {
         // Create a child object for the tentacle visuals
@@ -143,18 +154,13 @@ public class SlimeCharacterController : MonoBehaviour
 
     }
 
-    private void FixedUpdate()
-    {
-        
-    }
-
     public void Initialize(BlobTest blob)
     {
         controlledBlob = blob.blob;
         Debug.Log("setting blob ref");
         if (blob != null)
         {
-            
+
 
             // Store original properties
             originalRadius = new Vector2(controlledBlob.Radius, controlledBlob.Radius);
@@ -189,7 +195,60 @@ public class SlimeCharacterController : MonoBehaviour
         }
     }
 
+
     void Update()
+    {
+        // Gather all inputs in Update
+        GatherInputs();
+
+        // Handle tentacle grapple
+        HandleTentacleGrappleInput();
+
+        // Update timers
+        if (jumpCooldownTimer > 0)
+        {
+            jumpCooldownTimer -= Time.deltaTime;
+        }
+
+        // Update jump direction based on input direction
+        UpdateJumpDirection();
+
+        // Handle jump input
+        HandleJumpInput();
+
+        // Handle stuck state input
+        HandleStuckStateInput();
+    }
+
+    private void GatherInputs()
+    {
+        // Get movement input
+        horizontalInput = Input.GetAxis("Horizontal");
+
+        // Get directional input
+        dirInput = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+
+        // Get jump input
+        jumpKeyPressed = Input.GetKey(KeyCode.LeftShift);
+        jumpKeyReleased = Input.GetKeyUp(KeyCode.LeftShift);
+
+        // Get tentacle input
+        shootTentaclePressed = Input.GetMouseButtonDown(0);
+        breakTentaclePressed = Input.GetMouseButtonUp(0);
+
+        // Get mouse position
+        mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+    }
+
+    private void UpdateJumpDirection()
+    {
+        if (dirInput.magnitude > 0.1f)
+        {
+            jumpDirection = dirInput.normalized;
+        }
+    }
+
+    private void FixedUpdate()
     {
         if (controlledBlob == null) return;
 
@@ -199,28 +258,24 @@ public class SlimeCharacterController : MonoBehaviour
             screenBounds = cameraController.GetScreenBounds();
         }
 
-        // Update timers
-        if (jumpCooldownTimer > 0)
-        {
-            jumpCooldownTimer -= Time.deltaTime;
-        }
-
         // Check if grounded
         CheckGrounded();
 
-        // Handle horizontal movement
+        // Handle horizontal movement using the input we gathered in Update
         HandleMovement();
 
-        // Handle jump charging
-        HandleJumpCharge();
+        // Apply jump and jump charging effects
+        ApplyJumpEffects();
 
-        HandleStuckState();
+        // Apply stuck state effects
+        ApplyStuckStateEffects();
 
-        HandleTentacleGrapple();
+        // Apply rope physics if tentacle is active
         if (isTentacleActive)
         {
             ApplyRopePhysics();
         }
+
         // Update visual feedback
         UpdateVisuals();
     }
@@ -308,44 +363,43 @@ public class SlimeCharacterController : MonoBehaviour
 
     private void HandleMovement()
     {
-        float horizontalInput = Input.GetAxis("Horizontal");
-
         if (Mathf.Abs(horizontalInput) > 0.1f)
         {
-            if(!isCharging)
+            if (!isCharging)
             {
                 // Apply horizontal force to all points
                 float moveFactor = isGrounded ? 1f : airControlFactor;
-                Vector2 moveForce = new Vector2(horizontalInput * moveSpeed * moveFactor * Time.deltaTime, 0);
+                Vector2 moveForce = new Vector2(horizontalInput * moveSpeed * moveFactor * Time.fixedDeltaTime, 0);
 
                 foreach (BlobPoint point in controlledBlob.Points)
                 {
                     point.Position += moveForce;
                 }
             }
-            
         }
     }
 
-    private void HandleJumpCharge()
+    private void HandleJumpInput()
     {
-        // Get jump direction from arrow keys
-        Vector2 dirInput = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-        if (dirInput.magnitude > 0.1f)
-        {
-            jumpDirection = dirInput.normalized;
-        }
-        else if (!isCharging)
-        {
-           
-        }
-
-        // Jump charge (Space bar)
-        if (Input.GetKey(KeyCode.LeftShift) && isGrounded && jumpCooldownTimer <= 0)
+        // Handle jump charging input
+        if (jumpKeyPressed && isGrounded && jumpCooldownTimer <= 0)
         {
             isCharging = true;
             currentChargeTime += Time.deltaTime * chargeSpeed;
+        }
 
+        // Handle jump release input
+        if (jumpKeyReleased && isCharging)
+        {
+            isCharging = false;
+            jumpCooldownTimer = jumpCooldown;
+        }
+    }
+
+    private void ApplyJumpEffects()
+    {
+        if (isCharging)
+        {
             // Squish the slime vertically and stretch horizontally
             float squishAmount = Mathf.Lerp(1f, squishFactor, Mathf.Clamp01(currentChargeTime / maxChargeMultiplier));
             float stretchAmount = Mathf.Lerp(1f, stretchFactor, Mathf.Clamp01(currentChargeTime / maxChargeMultiplier));
@@ -357,24 +411,22 @@ public class SlimeCharacterController : MonoBehaviour
             SoftBodySimulator.Instance.blobColor = Color.Lerp(normalColor, chargeColor, Mathf.Clamp01(currentChargeTime / maxChargeMultiplier));
         }
 
-        // Jump release
-        if (Input.GetKeyUp(KeyCode.LeftShift) && isCharging)
+        // Apply jump force if we just released the jump key
+        if (jumpKeyReleased && currentChargeTime > 0)
         {
             // Calculate jump force
             float jumpMultiplier = Mathf.Clamp(currentChargeTime, 1f, maxChargeMultiplier);
             Vector2 jumpForce = jumpDirection * baseJumpForce * jumpMultiplier;
-            Debug.Log(jumpForce);
+
             // Apply jump force to all points
             foreach (BlobPoint point in controlledBlob.Points)
             {
-                point.Position += jumpForce * Time.deltaTime;
-                point.PreviousPosition = point.Position - jumpForce * Time.deltaTime; // Apply as velocity
+                point.Position += jumpForce * Time.fixedDeltaTime;
+                point.PreviousPosition = point.Position - jumpForce * Time.fixedDeltaTime; // Apply as velocity
             }
 
             // Reset charging state
-            isCharging = false;
             currentChargeTime = 0f;
-            jumpCooldownTimer = jumpCooldown;
 
             // Reset blob shape
             ResetBlobShape();
@@ -384,66 +436,66 @@ public class SlimeCharacterController : MonoBehaviour
         }
     }
 
-    private void HandleStuckState()
+    private void HandleStuckStateInput()
     {
         // Check if stuck (contact with small colliders)
         isStuck = CheckIfStuck();
 
         if (isStuck)
         {
-            // Get jump direction from arrow keys
-            Vector2 dirInput = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-            if (dirInput.magnitude > 0.1f)
-            {
-                jumpDirection = dirInput.normalized;
-            }
-            else if (!isCharging)
-            {
-
-            }
-
-            // Jump charge (Space bar)
-            if (Input.GetKey(KeyCode.LeftShift) && isStuck && jumpCooldownTimer <= 0)
+            // Handle jump charging input when stuck
+            if (jumpKeyPressed && jumpCooldownTimer <= 0)
             {
                 isCharging = true;
                 currentChargeTime += Time.deltaTime * chargeSpeed;
-
-                // Squish the slime vertically and stretch horizontally
-                float squishAmount = Mathf.Lerp(1f, squishFactor, Mathf.Clamp01(currentChargeTime / maxChargeMultiplier));
-                float stretchAmount = Mathf.Lerp(1f, stretchFactor, Mathf.Clamp01(currentChargeTime / maxChargeMultiplier));
-
-                // Apply squish by modifying blob parameters
-                ModifyBlobShape(squishAmount, stretchAmount);
-
-                // Change color while charging
-                SoftBodySimulator.Instance.blobColor = Color.Lerp(normalColor, chargeColor, Mathf.Clamp01(currentChargeTime / maxChargeMultiplier));
             }
 
-            // Jump release
-            if (Input.GetKeyUp(KeyCode.LeftShift) && isCharging)
+            // Handle jump release input when stuck
+            if (jumpKeyReleased && isCharging)
             {
-                // Calculate jump force
-                float jumpMultiplier = Mathf.Clamp(currentChargeTime, 1f, maxChargeMultiplier);
-                Vector2 jumpForce = jumpDirection * baseJumpForce * jumpMultiplier;
-                Debug.Log(jumpForce);
-                // Apply jump force to all points
-                foreach (BlobPoint point in controlledBlob.Points)
-                {
-                    point.Position += jumpForce * Time.deltaTime;
-                    point.PreviousPosition = point.Position - jumpForce * Time.deltaTime; // Apply as velocity
-                }
-
-                // Reset charging state
                 isCharging = false;
-                currentChargeTime = 0f;
                 jumpCooldownTimer = jumpCooldown;
-
-                // Reset blob shape
-                ResetBlobShape();
-
-                // Reset color
-                SoftBodySimulator.Instance.blobColor = normalColor;
             }
+        }
+    }
+
+    private void ApplyStuckStateEffects()
+    {
+        if (isStuck && isCharging)
+        {
+            // Squish the slime vertically and stretch horizontally
+            float squishAmount = Mathf.Lerp(1f, squishFactor, Mathf.Clamp01(currentChargeTime / maxChargeMultiplier));
+            float stretchAmount = Mathf.Lerp(1f, stretchFactor, Mathf.Clamp01(currentChargeTime / maxChargeMultiplier));
+
+            // Apply squish by modifying blob parameters
+            ModifyBlobShape(squishAmount, stretchAmount);
+
+            // Change color while charging
+            SoftBodySimulator.Instance.blobColor = Color.Lerp(normalColor, stuckChargeColor, Mathf.Clamp01(currentChargeTime / maxChargeMultiplier));
+        }
+
+        // Apply jump force if we just released the jump key while stuck
+        if (isStuck && jumpKeyReleased && currentChargeTime > 0)
+        {
+            // Calculate jump force
+            float jumpMultiplier = Mathf.Clamp(currentChargeTime, 1f, maxChargeMultiplier);
+            Vector2 jumpForce = jumpDirection * baseJumpForce * jumpMultiplier;
+
+            // Apply jump force to all points
+            foreach (BlobPoint point in controlledBlob.Points)
+            {
+                point.Position += jumpForce * Time.fixedDeltaTime;
+                point.PreviousPosition = point.Position - jumpForce * Time.fixedDeltaTime; // Apply as velocity
+            }
+
+            // Reset charging state
+            currentChargeTime = 0f;
+
+            // Reset blob shape
+            ResetBlobShape();
+
+            // Reset color
+            SoftBodySimulator.Instance.blobColor = normalColor;
         }
     }
 
@@ -511,14 +563,11 @@ public class SlimeCharacterController : MonoBehaviour
         softBodySim.blobParams.puffy = originalPuffy * verticalScale;
     }
 
-    private void HandleTentacleGrapple()
+    private void HandleTentacleGrappleInput()
     {
         // Left mouse button pressed: Shoot tentacle
-        if (Input.GetMouseButtonDown(0))
+        if (shootTentaclePressed)
         {
-            // Get mouse position in world coordinates
-            Vector2 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            Debug.Log("Cast ray");
             // Cast a ray to see if there's something to grapple onto
             RaycastHit2D hit = Physics2D.Raycast(
                 controlledBlob.GetCenter(),
@@ -532,9 +581,9 @@ public class SlimeCharacterController : MonoBehaviour
                 // Found something to grapple!
                 isTentacleActive = true;
                 tentacleTarget = hit.point;
-                Debug.Log("ray Hit");
-                // Store the grappled object's Rigidbody2D (if it has one)
-                grappledObject = hit.collider.GetComponent<Collider2D>();
+
+                // Store the grappled object's Collider2D
+                grappledObject = hit.collider;
 
                 // Calculate the local grapple point relative to the grappled object
                 if (grappledObject != null)
@@ -558,7 +607,7 @@ public class SlimeCharacterController : MonoBehaviour
         }
 
         // Left mouse button released: Break tentacle
-        if (Input.GetMouseButtonUp(0))
+        if (breakTentaclePressed)
         {
             isTentacleActive = false;
             grappledObject = null; // Clear the grappled object reference
@@ -587,6 +636,7 @@ public class SlimeCharacterController : MonoBehaviour
             }
         }
     }
+
     private void ApplyRopePhysics()
     {
         // Get the slime's center and the direction to the grapple point
@@ -605,18 +655,16 @@ public class SlimeCharacterController : MonoBehaviour
             Vector2 springForceVector = directionToGrapple * stretchAmount * springForce;
 
             // Apply damping to reduce oscillations
-            Vector2 slimeVelocity = (slimeCenter - controlledBlob.GetPreviousCenter()) / Time.deltaTime;
+            Vector2 slimeVelocity = (slimeCenter - controlledBlob.GetPreviousCenter()) / Time.fixedDeltaTime;
             Vector2 dampingForce = -slimeVelocity * dampingFactor;
 
             // Apply the net force to all blob points
             Vector2 netForce = springForceVector + dampingForce;
             foreach (BlobPoint point in controlledBlob.Points)
             {
-                point.Position += springForceVector * Time.deltaTime;
+                point.Position += springForceVector * Time.fixedDeltaTime;
             }
         }
-
-       
     }
 
     private void ResetBlobShape()

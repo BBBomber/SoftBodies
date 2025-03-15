@@ -318,7 +318,7 @@ MonoBehaviour:
     enableResetOnSpace: 1
     jellyStrength: 0.1
     bounceFactor: 0.8
-  splineResolution: 2
+  splineResolution: 1
   lineWidth: 0.1
   blobColor: {r: 0, g: 1, b: 0, a: 1}
   face:
@@ -388,7 +388,7 @@ MonoBehaviour:
   stuckLaunchForce: 2.5
   maxStuckCompressionFactor: 0.5
   stuckChargeColor: {r: 1, g: 0.3, b: 0.3, a: 1}
-  colliderCheckRadius: 2
+  colliderCheckRadius: 3
   tentacleMaxLength: 50
   tentaclePullForce: 1
   maxTentacleDuration: 10

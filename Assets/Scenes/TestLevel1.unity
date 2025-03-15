@@ -727,7 +727,7 @@ MonoBehaviour:
     enableCollisions: 1
     enableMorphing: 0
     enablePressure: 1
-    enableSpringDragging: 0
+    enableSpringDragging: 1
     enableSoftBodyCollisions: 0
     enableJellyEffect: 0
     enableResetOnSpace: 1
@@ -773,28 +773,6 @@ MonoBehaviour:
     idleAnimationSpeed: 1
     expressionChangeFrequency: 0
   simulationType: 0
-  blobTestObject: {fileID: 0}
-  activeBlobTest: {fileID: 0}
-  lastParams:
-    dampening: 0.99
-    gravity: 1
-    radius: 1
-    puffy: 1.5
-    points: 16
-    maxDisplacement: 0.1
-    mouseInteractionRadius: 1
-    maxVelocity: 3
-  lastFeatures:
-    enableSprings: 1
-    enableCollisions: 1
-    enableMorphing: 0
-    enablePressure: 1
-    enableSpringDragging: 1
-    enableSoftBodyCollisions: 0
-    enableJellyEffect: 0
-    enableResetOnSpace: 1
-    jellyStrength: 0.1
-    bounceFactor: 0.8
   controller: {fileID: 789832478}
 --- !u!4 &789832480
 Transform:

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class BlobPoint
@@ -89,6 +90,20 @@ public class BlobPoint
                 isDragging = false;
                 Vector2 velocity = (Position - PreviousPosition) / Time.fixedDeltaTime;
                 PreviousPosition = Position - velocity * Time.fixedDeltaTime; // Apply velocity for throwing
+            }
+        }
+    }
+
+    public void CheckCollisionDuringMovement( List<Collider2D> colliders)
+    {
+        Vector2 movement = Position - PreviousPosition;
+        if (movement.sqrMagnitude > 0.03f)
+        {
+            RaycastHit2D hit = Physics2D.Raycast(PreviousPosition, movement.normalized, movement.magnitude);
+            if (hit.collider != null && colliders.Contains(hit.collider))
+            {
+                // Move to the hit point plus a small offset
+                Position = hit.point + hit.normal * 0.1f;
             }
         }
     }

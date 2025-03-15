@@ -38,7 +38,7 @@ public class SlimeCharacterController : MonoBehaviour
 
     [Tooltip("Distance to check for ground")]
     [Range(0.05f, 1f)]
-    public float groundCheckDistance = 0.2f;
+    public float groundCheckDistance = 0.3f;
 
     [Tooltip("Consider screen boundaries as ground")]
     public bool useScreenBoundariesAsGround = true;
@@ -49,8 +49,8 @@ public class SlimeCharacterController : MonoBehaviour
 
     [Header("Movement Settings")]
     [Tooltip("Horizontal movement speed")]
-    [Range(1f, 10f)]
-    public float moveSpeed = 5f;
+    [Range(0f, 10f)]
+    public float moveSpeed = 0.5f;
 
     [Tooltip("Air control factor (0-1)")]
     [Range(0f, 1f)]
@@ -200,7 +200,14 @@ public class SlimeCharacterController : MonoBehaviour
     {
         // Gather all inputs in Update
         GatherInputs();
+        // Update screen bounds
+        if (cameraController != null)
+        {
+            screenBounds = cameraController.GetScreenBounds();
+        }
 
+        // Check if grounded
+        CheckGrounded();
         // Handle tentacle grapple
         HandleTentacleGrappleInput();
 
@@ -218,6 +225,12 @@ public class SlimeCharacterController : MonoBehaviour
 
         // Handle stuck state input
         HandleStuckStateInput();
+
+        // Apply jump and jump charging effects
+        ApplyJumpEffects();
+
+        // Apply stuck state effects
+        ApplyStuckStateEffects();
     }
 
     private void GatherInputs()
@@ -252,23 +265,12 @@ public class SlimeCharacterController : MonoBehaviour
     {
         if (controlledBlob == null) return;
 
-        // Update screen bounds
-        if (cameraController != null)
-        {
-            screenBounds = cameraController.GetScreenBounds();
-        }
-
-        // Check if grounded
-        CheckGrounded();
+        
 
         // Handle horizontal movement using the input we gathered in Update
         HandleMovement();
 
-        // Apply jump and jump charging effects
-        ApplyJumpEffects();
-
-        // Apply stuck state effects
-        ApplyStuckStateEffects();
+        
 
         // Apply rope physics if tentacle is active
         if (isTentacleActive)
@@ -597,7 +599,7 @@ public class SlimeCharacterController : MonoBehaviour
 
                 // Store the initial length of the tentacle
                 fixedTentacleLength = Vector2.Distance(controlledBlob.GetCenter(), tentacleTarget);
-
+                moveSpeed = 1.5f;
                 // Enable the tentacle visuals
                 if (tentacleRenderer != null)
                 {
@@ -609,6 +611,7 @@ public class SlimeCharacterController : MonoBehaviour
         // Left mouse button released: Break tentacle
         if (breakTentaclePressed)
         {
+            moveSpeed = 0.5f;
             isTentacleActive = false;
             grappledObject = null; // Clear the grappled object reference
 

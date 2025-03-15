@@ -383,7 +383,7 @@ MonoBehaviour:
   groundCheckDistance: 0.25
   useScreenBoundariesAsGround: 1
   screenEdgeThreshold: 0.1
-  moveSpeed: 1
+  moveSpeed: 0.5
   airControlFactor: 0.5
   stuckLaunchForce: 2.5
   maxStuckCompressionFactor: 0.5

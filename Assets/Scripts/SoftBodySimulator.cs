@@ -569,6 +569,7 @@ public class BlobTest : MonoBehaviour
     {
 
         // Get mouse input
+        
         Vector2 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         bool isRightMousePressed = Input.GetMouseButton(1); // Right mouse button
         bool isRightMouseReleased = Input.GetMouseButtonUp(1); // Right mouse button released

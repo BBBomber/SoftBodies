@@ -135,6 +135,15 @@ public class SlimeCharacterController : MonoBehaviour
     private Collider2D grappledObject; // Store the grappled object's Rigidbody2D
     private Vector2 localGrapplePoint; // Store the local position of the grapple point relative to the grappled object
 
+    // Add these variables to your class
+    [Header("Mobile Input")]
+    public VirtualJoystick moveJoystick;
+    public VirtualJoystick aimJoystick; // For tentacle aiming
+    public bool useMobileControls = false;
+
+    // Add this variable to track if the jump was released this frame
+    private bool jumpReleasedThisFrame = false;
+
 
 
     void Start()
@@ -151,6 +160,8 @@ public class SlimeCharacterController : MonoBehaviour
         tentacleRenderer.material = new Material(Shader.Find("Sprites/Default"));
         tentacleRenderer.positionCount = 2;
         tentacleRenderer.enabled = false; // Disable by default
+
+      
 
     }
 
@@ -235,22 +246,59 @@ public class SlimeCharacterController : MonoBehaviour
 
     private void GatherInputs()
     {
-        // Get movement input
-        horizontalInput = Input.GetAxis("Horizontal");
+        if (useMobileControls && moveJoystick != null)
+        {
+            // Mobile controls
+            horizontalInput = moveJoystick.Horizontal();
 
-        // Get directional input
-        dirInput = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+            // Get directional input from joystick
+            dirInput = new Vector2(moveJoystick.Horizontal(), moveJoystick.Vertical());
 
-        // Get jump input
-        jumpKeyPressed = Input.GetKey(KeyCode.LeftShift);
-        jumpKeyReleased = Input.GetKeyUp(KeyCode.LeftShift);
+            // jumpKeyPressed and jumpKeyReleased are set by the JumpButton methods
 
-        // Get tentacle input
-        shootTentaclePressed = Input.GetMouseButtonDown(0);
-        breakTentaclePressed = Input.GetMouseButtonUp(0);
+            // Use a second joystick for tentacle aiming if available
+            if (aimJoystick != null)
+            {
+                Vector2 aimInput = new Vector2(aimJoystick.Horizontal(), aimJoystick.Vertical());
+                if (aimInput.magnitude > 0.1f)
+                {
+                    // Convert joystick direction to world position relative to the blob
+                    Vector2 aimDirection = aimInput.normalized;
+                    mouseWorldPos = (Vector2)controlledBlob.GetCenter() + aimDirection * tentacleMaxLength;
 
-        // Get mouse position
-        mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+                    // Detect if the tentacle should be shot or released
+                    if (aimInput.magnitude > 0.8f && !isTentacleActive)
+                    {
+                        shootTentaclePressed = true;
+                    }
+                    else if (aimInput.magnitude < 0.2f && isTentacleActive)
+                    {
+                        breakTentaclePressed = true;
+                    }
+                    else
+                    {
+                        shootTentaclePressed = false;
+                        breakTentaclePressed = false;
+                    }
+                }
+                else
+                {
+                    shootTentaclePressed = false;
+                    breakTentaclePressed = false;
+                }
+            }
+        }
+        else
+        {
+            // Desktop controls (original)
+            horizontalInput = Input.GetAxis("Horizontal");
+            dirInput = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+            jumpKeyPressed = Input.GetKey(KeyCode.LeftShift);
+            jumpKeyReleased = Input.GetKeyUp(KeyCode.LeftShift);
+            shootTentaclePressed = Input.GetMouseButtonDown(0);
+            breakTentaclePressed = Input.GetMouseButtonUp(0);
+            mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        }
     }
 
     private void UpdateJumpDirection()
@@ -390,10 +438,11 @@ public class SlimeCharacterController : MonoBehaviour
             currentChargeTime += Time.deltaTime * chargeSpeed;
         }
 
-        // Handle jump release input
+        // Handle jump release input - don't reset jumpKeyReleased here
+        // Let the ApplyJumpEffects method handle the reset after applying the force
         if (jumpKeyReleased && isCharging)
         {
-            isCharging = false;
+            // Don't reset isCharging here
             jumpCooldownTimer = jumpCooldown;
         }
     }
@@ -416,6 +465,8 @@ public class SlimeCharacterController : MonoBehaviour
         // Apply jump force if we just released the jump key
         if (jumpKeyReleased && currentChargeTime > 0)
         {
+            Debug.Log("Jump released! Applying force with multiplier: " + Mathf.Clamp(currentChargeTime, 1f, maxChargeMultiplier));
+
             // Calculate jump force
             float jumpMultiplier = Mathf.Clamp(currentChargeTime, 1f, maxChargeMultiplier);
             Vector2 jumpForce = jumpDirection * baseJumpForce * jumpMultiplier;
@@ -429,12 +480,16 @@ public class SlimeCharacterController : MonoBehaviour
 
             // Reset charging state
             currentChargeTime = 0f;
+            isCharging = false;
 
             // Reset blob shape
             ResetBlobShape();
 
             // Reset color
             SoftBodySimulator.Instance.blobColor = normalColor;
+
+            // Reset the jump key released flag after applying the jump
+            jumpKeyReleased = false;
         }
     }
 
@@ -477,8 +532,11 @@ public class SlimeCharacterController : MonoBehaviour
         }
 
         // Apply jump force if we just released the jump key while stuck
+        // Apply jump force if we just released the jump key while stuck
         if (isStuck && jumpKeyReleased && currentChargeTime > 0)
         {
+            Debug.Log("Stuck jump released! Applying force with multiplier: " + Mathf.Clamp(currentChargeTime, 1f, maxChargeMultiplier));
+
             // Calculate jump force
             float jumpMultiplier = Mathf.Clamp(currentChargeTime, 1f, maxChargeMultiplier);
             Vector2 jumpForce = jumpDirection * baseJumpForce * jumpMultiplier;
@@ -492,12 +550,16 @@ public class SlimeCharacterController : MonoBehaviour
 
             // Reset charging state
             currentChargeTime = 0f;
+            isCharging = false;
 
             // Reset blob shape
             ResetBlobShape();
 
             // Reset color
             SoftBodySimulator.Instance.blobColor = normalColor;
+
+            // Reset the jump key released flag after applying the jump
+            jumpKeyReleased = false;
         }
     }
 
@@ -567,9 +629,12 @@ public class SlimeCharacterController : MonoBehaviour
 
     private void HandleTentacleGrappleInput()
     {
-        // Left mouse button pressed: Shoot tentacle
+        // Handle shooting tentacle
         if (shootTentaclePressed)
         {
+            // Reset for next frame
+            shootTentaclePressed = false;
+
             // Cast a ray to see if there's something to grapple onto
             RaycastHit2D hit = Physics2D.Raycast(
                 controlledBlob.GetCenter(),
@@ -600,6 +665,7 @@ public class SlimeCharacterController : MonoBehaviour
                 // Store the initial length of the tentacle
                 fixedTentacleLength = Vector2.Distance(controlledBlob.GetCenter(), tentacleTarget);
                 moveSpeed = 1.5f;
+
                 // Enable the tentacle visuals
                 if (tentacleRenderer != null)
                 {
@@ -608,9 +674,12 @@ public class SlimeCharacterController : MonoBehaviour
             }
         }
 
-        // Left mouse button released: Break tentacle
+        // Handle breaking tentacle
         if (breakTentaclePressed)
         {
+            // Reset for next frame
+            breakTentaclePressed = false;
+
             moveSpeed = 0.5f;
             isTentacleActive = false;
             grappledObject = null; // Clear the grappled object reference
@@ -698,6 +767,29 @@ public class SlimeCharacterController : MonoBehaviour
         }
     }
 
+    // First, add these methods to handle jump button events from your JumpButton script
+    public void OnJumpButtonPressed()
+    {
+        // Simulate jump key press
+        jumpKeyPressed = true;
+        jumpKeyReleased = false;
+    }
+
+    public void OnJumpButtonReleased()
+    {
+        jumpKeyPressed = false;
+        jumpKeyReleased = true;
+
+        // We don't need to reset this via coroutine, let the jump logic handle it
+        // This ensures the jump happens before the flag is cleared
+    }
+
+
+    private IEnumerator ResetJumpKeyReleased()
+    {
+        yield return null; // Wait one frame
+        jumpKeyReleased = false;
+    }
     void OnGUI()
     {
         // Debug information

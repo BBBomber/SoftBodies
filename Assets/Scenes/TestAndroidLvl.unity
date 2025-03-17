@@ -392,13 +392,13 @@ MonoBehaviour:
   baseJumpForce: 24
   maxChargeMultiplier: 5
   chargeSpeed: 3
-  squishFactor: 0.78
+  squishFactor: 0.955
   stretchFactor: 1
   jumpCooldown: 0.5
   groundLayer:
     serializedVersion: 2
     m_Bits: 64
-  groundCheckDistance: 0.25
+  groundCheckDistance: 0.3
   useScreenBoundariesAsGround: 1
   screenEdgeThreshold: 0.1
   moveSpeed: 0.5
@@ -1549,6 +1549,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1795931915
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1795931916}
+  m_Layer: 0
+  m_Name: GameObject
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1795931916
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1795931915}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -180.6794, y: 396.7433, z: -15.878246}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1872270490
 GameObject:
   m_ObjectHideFlags: 0
@@ -1937,3 +1968,4 @@ SceneRoots:
   - {fileID: 1152297168}
   - {fileID: 1328359877}
   - {fileID: 707423728}
+  - {fileID: 1795931916}

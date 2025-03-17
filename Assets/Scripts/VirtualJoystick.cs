@@ -40,6 +40,23 @@ public class VirtualJoystick : MonoBehaviour, IDragHandler, IPointerUpHandler, I
         handleRectTransform.anchorMin = new Vector2(0.5f, 0.5f);
         handleRectTransform.anchorMax = new Vector2(0.5f, 0.5f);
         handleRectTransform.pivot = new Vector2(0.5f, 0.5f);
+
+        // Ensure this GameObject and all child components can receive touch/raycasts
+        EnsureRaycastTarget();
+    }
+
+    private void EnsureRaycastTarget()
+    {
+        // Make sure all images can receive raycasts
+        Image bgImage = joystickBackground.GetComponent<Image>();
+        if (bgImage != null) bgImage.raycastTarget = true;
+
+        Image handleImage = joystickHandle.GetComponent<Image>();
+        if (handleImage != null) handleImage.raycastTarget = true;
+
+        // Also check if there's an image on this gameObject
+        Image thisImage = GetComponent<Image>();
+        if (thisImage != null) thisImage.raycastTarget = true;
     }
 
     private void PositionJoystickAtBottomLeft()
@@ -74,33 +91,41 @@ public class VirtualJoystick : MonoBehaviour, IDragHandler, IPointerUpHandler, I
 
     public void OnDrag(PointerEventData eventData)
     {
-        if (eventData.pointerId != touchId) return; // Ignore other touches
+        // For touch input on mobile, make sure we're tracking the correct pointer
+        if (eventData.pointerId != touchId && touchId != -1)
+            return; // Ignore other touches if we're already tracking one
 
-        // Convert screen position to world and then to local position of background
+        // For cases where touch might not have gone through OnPointerDown first
+        if (touchId == -1)
+            touchId = eventData.pointerId;
+
+        // Convert screen position to local position relative to the background
         Vector2 localPoint;
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
             backgroundRectTransform,
             eventData.position,
-            canvasCamera,
-            out localPoint);
+            eventData.pressEventCamera, // Use the eventData camera directly
+            out localPoint))
+        {
+            // Calculate normalized direction and magnitude
+            Vector2 direction = localPoint;
+            float magnitude = direction.magnitude;
 
-        // Calculate normalized direction and magnitude
-        Vector2 direction = localPoint;
-        float magnitude = Mathf.Min(direction.magnitude, backgroundRadius);
+            // Clamp the handle position within the background's radius
+            if (magnitude > backgroundRadius)
+                direction = direction.normalized * backgroundRadius;
 
-        // Clamp the handle position within the background's radius
-        Vector2 clampedDirection = direction.normalized * magnitude;
+            // Set handle position
+            handleRectTransform.anchoredPosition = direction;
 
-        // Set handle position
-        handleRectTransform.anchoredPosition = clampedDirection;
-
-        // Calculate input vector (normalized -1 to 1)
-        inputVector = clampedDirection / backgroundRadius;
+            // Calculate input vector (normalized -1 to 1)
+            inputVector = direction / backgroundRadius;
+        }
     }
 
     public void OnPointerUp(PointerEventData eventData)
     {
-        if (eventData.pointerId == touchId) // Only reset if the releasing touch is the tracked one
+        if (eventData.pointerId == touchId || touchId == -1) // Reset if this is our tracked touch or if we somehow missed tracking
         {
             ResetJoystick();
         }
@@ -108,34 +133,10 @@ public class VirtualJoystick : MonoBehaviour, IDragHandler, IPointerUpHandler, I
 
     private void Update()
     {
-        if (touchId != -1) // Only check if there's an active touch
+        // Extra safety for mobile: If all touches have ended but we're still tracking one, reset
+        if (touchId != -1 && Input.touchCount == 0 && !Input.GetMouseButton(0))
         {
-            if (Input.touchCount > 0) // For mobile/touch input
-            {
-                bool touchFound = false;
-                foreach (Touch touch in Input.touches)
-                {
-                    if (touch.fingerId == touchId)
-                    {
-                        touchFound = true;
-                        if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
-                        {
-                            ResetJoystick();
-                        }
-                        break;
-                    }
-                }
-
-                // If tracked touch is no longer found, reset
-                if (!touchFound)
-                {
-                    ResetJoystick();
-                }
-            }
-            else if (!Input.GetMouseButton(0)) // For mouse input (only one click at a time)
-            {
-                ResetJoystick();
-            }
+            ResetJoystick();
         }
     }
 
@@ -149,48 +150,4 @@ public class VirtualJoystick : MonoBehaviour, IDragHandler, IPointerUpHandler, I
     public float Horizontal() { return inputVector.x; }
     public float Vertical() { return inputVector.y; }
     public Vector2 GetInputVector() { return inputVector; }
-
-    // Make the joystick handle also detect events
-    private void OnEnable()
-    {
-        // Add event triggers to the handle if not already present
-        AddEventTriggerToHandle();
-    }
-
-    private void AddEventTriggerToHandle()
-    {
-        // Get or add EventTrigger component to the handle
-        GameObject handleObj = joystickHandle.gameObject;
-        EventTrigger trigger = handleObj.GetComponent<EventTrigger>();
-        if (trigger == null)
-            trigger = handleObj.AddComponent<EventTrigger>();
-
-        // Clear existing entries to avoid duplicates
-        if (trigger.triggers != null)
-            trigger.triggers.Clear();
-
-        // Add pointer down event
-        EventTrigger.Entry pointerDown = new EventTrigger.Entry();
-        pointerDown.eventID = EventTriggerType.PointerDown;
-        pointerDown.callback.AddListener((data) => {
-            OnPointerDown((PointerEventData)data);
-        });
-        trigger.triggers.Add(pointerDown);
-
-        // Add drag event
-        EventTrigger.Entry drag = new EventTrigger.Entry();
-        drag.eventID = EventTriggerType.Drag;
-        drag.callback.AddListener((data) => {
-            OnDrag((PointerEventData)data);
-        });
-        trigger.triggers.Add(drag);
-
-        // Add pointer up event
-        EventTrigger.Entry pointerUp = new EventTrigger.Entry();
-        pointerUp.eventID = EventTriggerType.PointerUp;
-        pointerUp.callback.AddListener((data) => {
-            OnPointerUp((PointerEventData)data);
-        });
-        trigger.triggers.Add(pointerUp);
-    }
 }

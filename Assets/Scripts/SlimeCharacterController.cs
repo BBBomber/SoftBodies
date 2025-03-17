@@ -408,7 +408,7 @@ public class SlimeCharacterController : MonoBehaviour
         }
 
         // Consider grounded if at least 4 points are touching
-        isGrounded = groundedPoints >= 4;
+        isGrounded = groundedPoints >= 2;
     }
 
     private void HandleMovement()

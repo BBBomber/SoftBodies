@@ -97,7 +97,7 @@ public class BlobPoint
     public void CheckCollisionDuringMovement( List<Collider2D> colliders)
     {
         Vector2 movement = Position - PreviousPosition;
-        if (movement.sqrMagnitude > 0.04f)
+        if (movement.sqrMagnitude > 0.01f)
         {
             RaycastHit2D hit = Physics2D.Raycast(PreviousPosition, movement.normalized, movement.magnitude);
             if (hit.collider != null && colliders.Contains(hit.collider))

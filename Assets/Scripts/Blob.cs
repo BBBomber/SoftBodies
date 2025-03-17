@@ -77,8 +77,8 @@ public class Blob
             point.VerletIntegrate(dampness  );
             point.ApplyGravity(grav );
         }
-        //int substeps = Mathf.Max(10, Mathf.CeilToInt( sim.blobParams.maxVelocity * 5));
-        for (int j = 0; j < 10; j++)
+        int substeps = Mathf.Max(10, Mathf.CeilToInt( sim.blobParams.maxVelocity * 5));
+        for (int j = 0; j < 20; j++)
         {
             if (features.enableSprings) ApplySpringForces();
             if (features.enablePressure) ApplyPressureExpansion();

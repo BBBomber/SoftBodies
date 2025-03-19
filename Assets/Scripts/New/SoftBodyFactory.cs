@@ -97,7 +97,7 @@ namespace SoftBodyPhysics
             // Setup additional properties
             softBody.createPerimeterSprings = true;
             softBody.createInternalSprings = false;
-            softBody.useGasPressure = true;
+            //softBody.useGasPressure = true;
 
             // Copy renderer properties if available
             SpriteRenderer sourceRenderer = source.GetComponent<SpriteRenderer>();

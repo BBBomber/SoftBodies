@@ -169,7 +169,7 @@ MonoBehaviour:
   mass: 1
   linearDamping: 0.99
   constraintIterations: 10
-  targetPressure: 31
+  targetPressure: 17.4
   pressureForce: 2
   showPressureForces: 1
   numPoints: 16
@@ -614,6 +614,7 @@ MonoBehaviour:
   fixedTimeStep: 0.016
   enableCollisions: 1
   broadphaseSubdivisions: 10
+  lateralDampingFactor: 0.94
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

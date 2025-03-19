@@ -20,9 +20,16 @@ namespace SoftBodyPhysics
         public bool enableCollisions = true;
         public int broadphaseSubdivisions = 10;
 
+
+        [Header("Stabilization Settings")]
+        [Range(0.7f, 1.0f)]
+        public float lateralDampingFactor = 0.92f;
+
         private List<ISoftBodyObject> softBodyObjects = new List<ISoftBodyObject>();
         private List<IJoint> joints = new List<IJoint>();
         private CollisionManager collisionManager;
+
+
 
         private void Awake()
         {
@@ -45,7 +52,7 @@ namespace SoftBodyPhysics
             {
                 softBody.UpdatePhysics(fixedTimeStep);
             }
-
+            ApplyGlobalLateralDamping();
             // Handle collisions
             if (enableCollisions)
             {
@@ -83,6 +90,32 @@ namespace SoftBodyPhysics
         public void UnregisterJoint(IJoint joint)
         {
             joints.Remove(joint);
+        }
+
+        // Add this new method
+        private void ApplyGlobalLateralDamping()
+        {
+            foreach (var softBody in softBodyObjects)
+            {
+                // Skip if the soft body isn't using pressure (like spring-based bodies)
+                if (!(softBody is PressureBasedBody))
+                    continue;
+
+                List<IPointMass> points = softBody.GetPoints();
+                Vector2 center = softBody.GetCenter();
+
+                foreach (IPointMass point in points)
+                {
+                    // Get velocity
+                    Vector2 velocity = point.Position - point.PreviousPosition;
+
+                    // Apply stronger damping to x component (horizontal)
+                    Vector2 dampedVelocity = new Vector2(velocity.x * lateralDampingFactor, velocity.y);
+
+                    // Update previous position to reflect damped velocity
+                    point.PreviousPosition = point.Position - dampedVelocity;
+                }
+            }
         }
     }
 }

@@ -25,20 +25,22 @@ public class CircularSpringBody : PressureBasedBody
     [Header("Physics Tuning")]
     [Range(0.4f, 0.9f)]
     public float bounceFactor = 0.5f;
-    [Range(1.0f, 2.0f)]
+    [Range(1.0f, 20.0f)]
     public float targetPressureMultiplier = 1.5f;
-    [Range(0.5f, 2.0f)]
+    [Range(0.5f, 200.0f)]
     public float pressureForceMultiplier = 1.0f;
+
+    private PointMass centerPoint;
 
     protected override void Initialize()
     {
         points.Clear();
         constraints.Clear();
-
-        // Set target area based on circle properties
-        targetArea = radius * radius * Mathf.PI;
         targetPressure = targetPressureMultiplier;
         pressureForce = pressureForceMultiplier;
+        // Set target area based on circle properties
+        targetArea = radius * radius * Mathf.PI * targetPressure;
+        
         // Create points around the circle
         for (int i = 0; i < numPoints; i++)
         {
@@ -65,7 +67,7 @@ public class CircularSpringBody : PressureBasedBody
     }
 
 
-    public override void UpdatePhysics(float deltaTime)
+   /* public override void UpdatePhysics(float deltaTime)
     {
         // Apply forces to all points (gravity, etc.)
         foreach (var point in points)
@@ -78,8 +80,13 @@ public class CircularSpringBody : PressureBasedBody
         int substeps = constraintIterations;
         for (int j = 0; j < substeps; j++)
         {
+            if (centerPoint != null)
+            {
+                centerPoint.Position = GetCenter();
+                centerPoint.PreviousPosition = centerPoint.Position;
+            }
             // Apply pressure forces
-            if (targetPressure > 0)
+           
                 ApplyPressureForce();
 
             // Solve spring constraints
@@ -87,8 +94,60 @@ public class CircularSpringBody : PressureBasedBody
             {
                 constraint.Solve();
             }
-
+            EnforceCircularShape();
             // Handle collisions
+            HandleCollisionsWithSolids();
+           
+        }
+
+        // Update transform position
+        transform.position = GetCenter();
+        
+    }*/
+
+    public override void UpdatePhysics(float deltaTime)
+    {
+        // Divide the time step by the number of substeps for stability
+        float subDeltaTime = deltaTime / constraintIterations;
+
+        // Apply internal forces with multiple substeps
+        for (int j = 0; j < constraintIterations; j++)
+        {
+            // Update center point at beginning of substep
+            if (centerPoint != null)
+            {
+                centerPoint.Position = GetCenter();
+                centerPoint.PreviousPosition = centerPoint.Position;
+            }
+
+            // Step 1: Apply all external forces (gravity)
+            foreach (var point in points)
+            {
+                point.ApplyGravity(SoftBodyPhysicsManager.Instance?.gravity ?? 9.8f);
+            }
+
+            // Step 2: Apply internal forces (pressure)
+            ApplyPressureForce();
+
+            // Step 3: Integrate positions based on accumulated forces
+            foreach (var point in points)
+            {
+                point.VerletIntegrate(subDeltaTime, linearDamping);
+            }
+
+            // Step 4: Solve constraints that directly modify positions
+            EnforceCircularShape();
+
+            // Step 5: Solve spring constraints and immediately apply their forces
+            foreach (var constraint in constraints)
+            {
+                constraint.Solve();
+
+                // For SpringConstraints, forces are accumulated but not yet applied
+                // We need to integrate after each constraint for proper spring behavior
+            }
+
+            // Step 6: Handle collisions (which directly modify positions)
             HandleCollisionsWithSolids();
         }
 
@@ -192,8 +251,7 @@ public class CircularSpringBody : PressureBasedBody
         {
             int nextIndex = (i + 1) % points.Count;
 
-            // Use SpringConstraint instead of DistanceConstraint
-            constraints.Add(new SpringConstraint(
+            constraints.Add(new ImmediateSpringConstraint(
                 points[i],
                 points[nextIndex],
                 Vector2.Distance(points[i].Position, points[nextIndex].Position),
@@ -203,25 +261,59 @@ public class CircularSpringBody : PressureBasedBody
         }
     }
 
+
     private void CreateInternalSprings()
     {
-        int totalPoints = points.Count;
-        int connectToNeighbors = Mathf.Min(4, totalPoints / 4); // Connect to several non-adjacent neighbors
+        // Create a center point but don't add to points list
+        Vector2 center = GetCenter();
+        centerPoint = new PointMass(center, mass * 2f);
 
-        for (int i = 0; i < totalPoints; i++)
+        /*// Create radial springs from perimeter to center
+        for (int i = 0; i < points.Count; i++)
         {
-            for (int offset = 2; offset <= connectToNeighbors + 1; offset++)
-            {
-                int targetIndex = (i + offset) % totalPoints;
+            constraints.Add(new ImmediateSpringConstraint(
+                points[i],
+                centerPoint,
+                radius,
+                perimeterSpringStiffness * 0.9f,
+                perimeterSpringDamping * 0.5f
+            ));
+        }*/
 
-                constraints.Add(new SpringConstraint(
-                    points[i],
-                    points[targetIndex],
-                    Vector2.Distance(points[i].Position, points[targetIndex].Position),
-                    perimeterSpringStiffness ,
-                    perimeterSpringDamping
-                ));
-            }
+        // Create cross connections
+        for (int i = 0; i < points.Count / 2; i++)
+        {
+            int oppositeIndex = (i + points.Count / 2) % points.Count;
+            constraints.Add(new ImmediateSpringConstraint(
+                points[i],
+                points[oppositeIndex],
+                radius * 2,
+                perimeterSpringStiffness * 0.7f,
+                perimeterSpringDamping
+            ));
+        }
+    }
+
+    private void EnforceCircularShape()
+    {
+        Vector2 center = GetCenter();
+        float strength = 0.08f; // Adjustable - higher means more shape retention
+
+        // Calculate current average radius
+        float avgRadius = 0;
+        foreach (var point in points)
+        {
+            avgRadius += Vector2.Distance(point.Position, center);
+        }
+        avgRadius /= points.Count;
+
+        // PBD correction toward ideal circle
+        for (int i = 0; i < points.Count; i++)
+        {
+            float angle = 2 * Mathf.PI * i / points.Count;
+            Vector2 idealPos = center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * avgRadius;
+            Vector2 correction = (idealPos - points[i].Position) * strength;
+            points[i].ApplyDisplacement(correction);
         }
     }
 
@@ -246,14 +338,17 @@ public class CircularSpringBody : PressureBasedBody
     {
         if (lineRenderer != null && points.Count > 0)
         {
-            // Update line renderer positions
-            for (int i = 0; i < points.Count; i++)
+            // Only use perimeter points for rendering
+            int perimeterPointCount = numPoints;
+            lineRenderer.positionCount = perimeterPointCount + 1;
+
+            for (int i = 0; i < perimeterPointCount; i++)
             {
                 lineRenderer.SetPosition(i, points[i].Position);
             }
 
             // Close the loop
-            lineRenderer.SetPosition(points.Count, points[0].Position);
+            lineRenderer.SetPosition(perimeterPointCount, points[0].Position);
         }
     }
 }

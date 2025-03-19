@@ -13,6 +13,7 @@ public class VirtualJoystick : MonoBehaviour, IDragHandler, IPointerUpHandler, I
     private Camera canvasCamera;
     private int touchId = -1; // Tracks the specific touch controlling the joystick
     private float backgroundRadius; // Radius of the joystick background
+    public bool isMovementJoystick = false;
 
     private void Start()
     {
@@ -28,8 +29,12 @@ public class VirtualJoystick : MonoBehaviour, IDragHandler, IPointerUpHandler, I
         // Calculate background radius (half of width)
         backgroundRadius = backgroundRectTransform.rect.width * 0.5f;
 
-        // Ensure the joystick is positioned at the bottom left
-        PositionJoystickAtBottomLeft();
+        if(isMovementJoystick) 
+        {
+            // Ensure the joystick is positioned at the bottom left
+            PositionJoystickAtBottomLeft();
+        }
+       
 
         // Make sure the anchor is centered
         backgroundRectTransform.anchorMin = new Vector2(0.5f, 0.5f);

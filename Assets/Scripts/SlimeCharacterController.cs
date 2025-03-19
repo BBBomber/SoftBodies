@@ -271,7 +271,7 @@ public class SlimeCharacterController : MonoBehaviour
                     {
                         shootTentaclePressed = true;
                     }
-                    else if (aimInput.magnitude < 0.2f && isTentacleActive)
+                    else if (aimInput.magnitude < 0.3f && isTentacleActive)
                     {
                         breakTentaclePressed = true;
                     }
@@ -284,7 +284,7 @@ public class SlimeCharacterController : MonoBehaviour
                 else
                 {
                     shootTentaclePressed = false;
-                    breakTentaclePressed = false;
+                    breakTentaclePressed = true;
                 }
             }
         }

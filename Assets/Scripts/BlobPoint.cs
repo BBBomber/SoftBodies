@@ -94,7 +94,7 @@ public class BlobPoint
         }
     }
 
-    public void CheckCollisionDuringMovement( List<Collider2D> colliders)
+    /*public void CheckCollisionDuringMovement( List<Collider2D> colliders)
     {
         Vector2 movement = Position - PreviousPosition;
         if (movement.sqrMagnitude > 0.01f)
@@ -106,5 +106,5 @@ public class BlobPoint
                 Position = hit.point + hit.normal * 0.1f;
             }
         }
-    }
+    }*/
 }

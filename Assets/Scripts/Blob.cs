@@ -90,7 +90,7 @@ public class Blob
                 if (features.enableSpringDragging)
                     point.HandleMouseInteraction(mousePosition, mouseInteractionRadius, isRightMousePressed, isRightMouseReleased);
                 point.KeepInBounds(bounds);
-                point.CheckCollisionDuringMovement(solidObjects);
+               // point.CheckCollisionDuringMovement(solidObjects);
             }
 
             if (features.enableCollisions) HandleCollisions(solidObjects);

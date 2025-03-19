@@ -169,8 +169,8 @@ MonoBehaviour:
   mass: 1
   linearDamping: 0.99
   constraintIterations: 10
-  targetPressure: 1
-  pressureForce: 6.4
+  targetPressure: 31
+  pressureForce: 2
   showPressureForces: 1
   numPoints: 16
   radius: 1
@@ -201,7 +201,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   slimeBody: {fileID: 123789632}
-  baseJumpForce: 40
+  baseJumpForce: 8
   maxChargeMultiplier: 3
   chargeSpeed: 2
   squishFactor: 0.99
@@ -608,7 +608,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5bbb16aec939bf648b926b14cd322c11, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gravity: 0.001
+  gravity: 0.01
   gravityDirection: {x: 0, y: -1}
   solverIterations: 10
   fixedTimeStep: 0.016

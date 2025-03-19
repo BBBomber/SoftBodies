@@ -76,13 +76,23 @@ namespace SoftBodyPhysics
             lineRenderer = GetComponent<LineRenderer>();
             if (lineRenderer == null)
             {
-                lineRenderer = gameObject.AddComponent<LineRenderer>();
+                // Create a new child GameObject for the jump indicator
+                GameObject indicatorObj = new GameObject("JumpIndicator");
+                indicatorObj.transform.SetParent(transform);
+                indicatorObj.transform.localPosition = Vector3.zero;
+
+                // Add the LineRenderer to the child object
+                lineRenderer = indicatorObj.AddComponent<LineRenderer>();
                 lineRenderer.startWidth = 0.1f;
                 lineRenderer.endWidth = 0.1f;
                 lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
                 lineRenderer.startColor = Color.white;
                 lineRenderer.endColor = Color.white;
                 lineRenderer.positionCount = 2;
+                lineRenderer.useWorldSpace = true;
+
+                // Set Z position to be slightly in front of the slime outline
+                lineRenderer.transform.position = new Vector3(transform.position.x, transform.position.y, -0.2f);
             }
             lineRenderer.enabled = false;
         }

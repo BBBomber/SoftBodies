@@ -25,10 +25,9 @@ namespace SoftBodyPhysics
         public bool enableSoftBodyCollisions = true;
 
         [Header("Visualization")]
-        public Color slimeColor = new Color(0.3f, 0.8f, 1f, 0.7f);
-        private MeshFilter meshFilter;
-        private MeshRenderer meshRenderer;
-        private Mesh slimeMesh;
+        public Color fillColor = new Color(0.3f, 0.8f, 1f, 0.7f);
+        public float lineWidth = 0.1f;
+        private LineRenderer lineRenderer;
 
         public List<SlimePoint> SlimePoints { get; private set; } = new List<SlimePoint>();
 
@@ -49,6 +48,27 @@ namespace SoftBodyPhysics
         }
 
 
+
+        private void LateUpdate()
+        {
+            if (lineRenderer != null)
+            {
+                // Update line renderer positions to follow the slime points
+                for (int i = 0; i < SlimePoints.Count; i++)
+                {
+                    // Important: Set the correct world position
+                    lineRenderer.SetPosition(i, SlimePoints[i].Position);
+                }
+                // Close the loop by connecting back to the first point
+                lineRenderer.SetPosition(SlimePoints.Count, SlimePoints[0].Position);
+
+                // Optional debug
+                if (Time.frameCount % 60 == 0) // Only log once every 60 frames
+                {
+                    Debug.Log("Updated SlimeBody outline, first point: " + lineRenderer.GetPosition(0));
+                }
+            }
+        }
 
         protected override void Initialize()
         {
@@ -74,7 +94,35 @@ namespace SoftBodyPhysics
                 SlimePoints.Add(point);
                 points.Add(point);
             }
+
+            if (lineRenderer == null) // Protect against multiple initialization
+            {
+                // Create a new child GameObject for the outline
+                GameObject outlineObj = new GameObject("SlimeOutline");
+                outlineObj.transform.SetParent(transform);
+                outlineObj.transform.localPosition = Vector3.zero;
+
+                // Add the LineRenderer to the child object
+                lineRenderer = outlineObj.AddComponent<LineRenderer>();
+                lineRenderer.positionCount = numPoints + 1; // +1 to close the loop
+                lineRenderer.startWidth = 0.2f;
+                lineRenderer.endWidth = 0.2f;
+                lineRenderer.loop = true;
+                lineRenderer.useWorldSpace = true; // Important to keep this true
+
+                // Set the material and color
+                lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
+                lineRenderer.startColor = fillColor;
+                lineRenderer.endColor = fillColor;
+
+                // Set Z position to be slightly in front
+                lineRenderer.transform.position = new Vector3(transform.position.x, transform.position.y, -0.1f);
+
+                Debug.Log("SlimeBody LineRenderer created with " + lineRenderer.positionCount + " points");
+            }
         }
+
+        
 
         public override void UpdatePhysics(float deltaTime)
         {

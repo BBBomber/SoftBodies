@@ -184,7 +184,8 @@ MonoBehaviour:
   enableSpringDragging: 1
   enableCollisions: 1
   enableSoftBodyCollisions: 0
-  slimeColor: {r: 0.32446414, g: 0.86415094, b: 0.52641577, a: 0.8}
+  fillColor: {r: 0.018082717, g: 0.98490566, b: 0.005574857, a: 1}
+  lineWidth: 0.1
   solidObjects: []
   otherSlimes: []
 --- !u!114 &123789633
@@ -203,7 +204,7 @@ MonoBehaviour:
   baseJumpForce: 40
   maxChargeMultiplier: 3
   chargeSpeed: 2
-  squishFactor: 0.1
+  squishFactor: 0.99
   stretchFactor: 1
   jumpCooldown: 0.5
   groundLayer:

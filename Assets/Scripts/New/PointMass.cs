@@ -77,5 +77,11 @@ namespace SoftBodyPhysics
                 displacementCount = 0;
             }
         }
+
+        public void ApplyGravity(float gravityForce)
+        {
+            if (IsFixed ) return;
+            Position += new Vector2(0, -gravityForce);
+        }
     }
 }

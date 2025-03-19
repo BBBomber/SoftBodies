@@ -261,8 +261,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   isCollidable: 1
   collisionLayer: 0
-  mass: 1
-  linearDamping: 0.99
+  mass: 4.6
+  linearDamping: 0.43
   constraintIterations: 10
   targetPressure: 10
   pressureForce: 2.02
@@ -270,11 +270,14 @@ MonoBehaviour:
   numPoints: 8
   radius: 1
   perimeterSpringStiffness: 0.8
-  perimeterSpringDamping: 0.1
+  perimeterSpringDamping: 0.868
   createPerimeterSprings: 1
   createInternalSprings: 1
   drawFilled: 1
   fillColor: {r: 0.2, g: 0.6, b: 0.9, a: 0.5}
+  bounceFactor: 0.5
+  targetPressureMultiplier: 1.927
+  pressureForceMultiplier: 1.78
 --- !u!1 &623042914
 GameObject:
   m_ObjectHideFlags: 0

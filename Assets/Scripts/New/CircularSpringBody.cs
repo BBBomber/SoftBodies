@@ -1,4 +1,5 @@
 using SoftBodyPhysics;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class CircularSpringBody : PressureBasedBody
@@ -21,6 +22,14 @@ public class CircularSpringBody : PressureBasedBody
 
     private LineRenderer lineRenderer;
 
+    [Header("Physics Tuning")]
+    [Range(0.4f, 0.9f)]
+    public float bounceFactor = 0.5f;
+    [Range(1.0f, 2.0f)]
+    public float targetPressureMultiplier = 1.5f;
+    [Range(0.5f, 2.0f)]
+    public float pressureForceMultiplier = 1.0f;
+
     protected override void Initialize()
     {
         points.Clear();
@@ -28,7 +37,8 @@ public class CircularSpringBody : PressureBasedBody
 
         // Set target area based on circle properties
         targetArea = radius * radius * Mathf.PI;
-
+        targetPressure = targetPressureMultiplier;
+        pressureForce = pressureForceMultiplier;
         // Create points around the circle
         for (int i = 0; i < numPoints; i++)
         {
@@ -57,67 +67,92 @@ public class CircularSpringBody : PressureBasedBody
 
     public override void UpdatePhysics(float deltaTime)
     {
-        // Apply gravity and integrate points
-        base.UpdatePhysics(deltaTime);
-
-        // Handle collisions with solid objects
-        HandleCollisionsWithSolids();
-
-        // Solve constraints multiple times for stability
-        for (int i = 0; i < constraintIterations; i++)
+        // Apply forces to all points (gravity, etc.)
+        foreach (var point in points)
         {
+            point.VerletIntegrate(deltaTime, linearDamping);
+            point.ApplyGravity(SoftBodyPhysicsManager.Instance?.gravity ?? 9.8f);
+        }
+
+        // Apply internal forces with multiple substeps
+        int substeps = constraintIterations;
+        for (int j = 0; j < substeps; j++)
+        {
+            // Apply pressure forces
+            if (targetPressure > 0)
+                ApplyPressureForce();
+
+            // Solve spring constraints
             foreach (var constraint in constraints)
             {
                 constraint.Solve();
             }
+
+            // Handle collisions
+            HandleCollisionsWithSolids();
         }
 
-        // Update transform position based on center
+        // Update transform position
         transform.position = GetCenter();
     }
 
     // Add this method to handle collisions with solid objects
     private void HandleCollisionsWithSolids()
     {
+        Dictionary<Collider2D, Vector2> lastColliderPositions = new Dictionary<Collider2D, Vector2>();
+        float bounceFactor = 0.5f; // Add this parameter to your class
+
         foreach (PointMass point in points)
         {
             foreach (Collider2D collider in Physics2D.OverlapCircleAll(point.Position, 0.1f))
             {
-                // Skip triggers
                 if (collider.isTrigger) continue;
 
-                // Get closest point on collider
                 Vector2 closestPoint = collider.ClosestPoint(point.Position);
                 float distance = Vector2.Distance(point.Position, closestPoint);
 
-                // If the point is near or inside the collider
                 if (distance < 0.1f || collider.OverlapPoint(point.Position))
                 {
-                    // Calculate normal direction
                     Vector2 normal = (point.Position - closestPoint).normalized;
-
-                    // If normal is zero (point is inside), use direction from center
                     if (normal.magnitude < 0.001f)
                     {
                         normal = (point.Position - (Vector2)collider.bounds.center).normalized;
-
-                        // If still zero, use a default direction
-                        if (normal.magnitude < 0.001f)
-                        {
-                            normal = Vector2.up;
-                        }
+                        if (normal.magnitude < 0.001f) normal = Vector2.up;
                     }
 
                     // Push the point out
                     point.Position = closestPoint + normal * 0.1f;
 
-                    // Reflect velocity for bouncing
+                    // Better bounce with proper bounce factor
                     Vector2 velocity = point.Position - point.PreviousPosition;
-                    Vector2 reflectedVelocity = Vector2.Reflect(velocity, normal) * 0.3f;
+                    Vector2 reflectedVelocity = Vector2.Reflect(velocity, normal) * bounceFactor;
                     point.PreviousPosition = point.Position - reflectedVelocity;
+
+                    // Handle platform movement
+                    if (normal.y > 0.7f) // If on top of the platform
+                    {
+                        ApplyPlatformMovement(point, collider, lastColliderPositions);
+                    }
                 }
             }
         }
+    }
+
+    private void ApplyPlatformMovement(PointMass point, Collider2D platform, Dictionary<Collider2D, Vector2> lastPositions)
+    {
+        // If we have a previous position for this platform
+        if (lastPositions.TryGetValue(platform, out Vector2 lastPos))
+        {
+            // Calculate platform movement
+            Vector2 platformDelta = (Vector2)platform.bounds.center - lastPos;
+
+            // Apply that movement to the point
+            point.Position += platformDelta;
+            point.PreviousPosition += platformDelta;
+        }
+
+        // Update position for next frame
+        lastPositions[platform] = platform.bounds.center;
     }
 
     public override void HandleCollision(ISoftBodyObject other)

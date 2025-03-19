@@ -30,6 +30,8 @@ namespace SoftBodyPhysics
         void ApplyForce(Vector2 force);
         void ApplyDisplacement(Vector2 displacement);
         void VerletIntegrate(float deltaTime, float dampingFactor);
+
+        void ApplyGravity(float gravityForce);
     }
 
     /// <summary>

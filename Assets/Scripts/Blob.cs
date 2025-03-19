@@ -90,11 +90,10 @@ public class Blob
                 if (features.enableSpringDragging)
                     point.HandleMouseInteraction(mousePosition, mouseInteractionRadius, isRightMousePressed, isRightMouseReleased);
                 point.KeepInBounds(bounds);
-               // point.CheckCollisionDuringMovement(solidObjects);
+              
             }
 
             if (features.enableCollisions) HandleCollisions(solidObjects);
-            //if (features.enableCollisions) HandleColliderBounds(solidObjects);
             if (features.enableSoftBodyCollisions) HandleSoftBodyCollisions(otherBlobs);
         }
     }
@@ -324,111 +323,7 @@ public class Blob
         }
     }
 
-    private void HandleColliderBounds(List<Collider2D> solidObjects)
-    {
-        if (!features.enableCollisions) return;
-
-        // Track which colliders we're in contact with this frame
-        HashSet<Collider2D> currentColliders = new HashSet<Collider2D>();
-
-        foreach (BlobPoint point in Points)
-        {
-            foreach (Collider2D collider in solidObjects)
-            {
-                // Check if point is inside or intersecting with the collider
-                if (collider.OverlapPoint(point.Position))
-                {
-                    currentColliders.Add(collider);
-
-                    // Find the closest point on the collider surface
-                    Vector2 closestSurfacePoint = collider.ClosestPoint(point.PreviousPosition);
-
-                    // If the closest point is the same as the current position, we need to find a different reference
-                    if ((closestSurfacePoint - point.Position).sqrMagnitude < 0.001f)
-                    {
-                        // Try to push away from the center of the collider
-                        Vector2 direction = (point.Position - (Vector2)collider.bounds.center).normalized;
-
-                        // If direction is zero, use a default direction
-                        if (direction.sqrMagnitude < 0.001f)
-                        {
-                            direction = Vector2.up;
-                        }
-
-                        // Move the point outside the collider in the direction away from center
-                        // Cast a ray from center of collider in the direction to find the edge
-                        RaycastHit2D hit = Physics2D.Raycast(collider.bounds.center, direction, 100f);
-                        if (hit.collider == collider)
-                        {
-                            // Move to the hit point plus a small offset
-                            point.Position = hit.point + direction * 0.1f;
-                        }
-                        else
-                        {
-                            // Fallback to using the bounds
-                            float boundsDist = Mathf.Max(collider.bounds.extents.x, collider.bounds.extents.y);
-                            point.Position = (Vector2)collider.bounds.center + direction * (boundsDist + 0.1f);
-                        }
-                    }
-                    else
-                    {
-                        // Simple case: just move to the closest surface point plus a small offset
-                        Vector2 normal = (point.PreviousPosition - closestSurfacePoint).normalized;
-
-                        // If normal is zero or very small, use direction from collider center
-                        if (normal.sqrMagnitude < 0.001f)
-                        {
-                            normal = (point.Position - (Vector2)collider.bounds.center).normalized;
-                            if (normal.sqrMagnitude < 0.001f)
-                            {
-                                normal = Vector2.up;
-                            }
-                        }
-
-                        // Move to the surface point plus a small offset in the normal direction
-                        point.Position = closestSurfacePoint + normal * 0.1f;
-                    }
-
-                    // Calculate velocity for bounce effect
-                    Vector2 velocity = point.Position - point.PreviousPosition;
-
-                    // If hitting a platform from above, apply platform movement
-                    if (velocity.y < 0 && point.Position.y > collider.bounds.center.y)
-                    {
-                        ApplyPlatformMovement(point, collider);
-                    }
-
-                    // Update previous position to maintain velocity
-                    // This is similar to KeepInBounds where we maintain the appropriate velocity
-                    point.PreviousPosition = point.Position - velocity * features.bounceFactor;
-
-                    break; // Only handle one collider per point per frame
-                }
-            }
-        }
-
-        // Update last positions for tracking movement
-        foreach (Collider2D collider in currentColliders)
-        {
-            lastColliderPositions[collider] = collider.bounds.center;
-        }
-
-        // Clean up colliders we're no longer in contact with
-        List<Collider2D> toRemove = new List<Collider2D>();
-        foreach (var kvp in lastColliderPositions)
-        {
-            if (!currentColliders.Contains(kvp.Key))
-            {
-                toRemove.Add(kvp.Key);
-            }
-        }
-
-        foreach (var collider in toRemove)
-        {
-            lastColliderPositions.Remove(collider);
-        }
-    }
-
+   
     public Vector2 GetPreviousCenter()
     {
         Vector2 sum = Vector2.zero;

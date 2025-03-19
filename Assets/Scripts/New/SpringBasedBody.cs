@@ -10,16 +10,17 @@ namespace SoftBodyPhysics
     {
         [Header("Spring Settings")]
         [Range(0f, 1f)]
-        public float springStiffness = 0.5f;
+        public float springStiffness = 1f;
         [Range(0f, 1f)]
         public float springDamping = 0.1f;
         public bool createPerimeterSprings = true;
-        public bool createInternalSprings = false;
+        public bool createInternalSprings = true;
 
         [Header("Gas Pressure Settings")]
-        public bool useGasPressure = false;
+        public bool useGasPressure = true;
         public float pressureAmount = 1.0f;
         public float pressureForce = 0.5f;
+        public float targetRadius = 1.0f; // Add this line
 
         protected float targetArea;
         protected float currentArea;
@@ -27,25 +28,34 @@ namespace SoftBodyPhysics
         [Header("Debug Visualization")]
         public bool showSprings = true;
 
+        private Dictionary<Collider2D, Vector2> lastColliderPositions = new Dictionary<Collider2D, Vector2>();
+
+        [SerializeField] private List<Collider2D> solidObjects = new List<Collider2D>();
         protected override void Initialize()
         {
             // Setup would be implemented in derived classes
+            solidObjects.AddRange(FindObjectsByType<Collider2D>(FindObjectsSortMode.None));
         }
 
         public override void UpdatePhysics(float deltaTime)
         {
             base.UpdatePhysics(deltaTime);
-
+            targetArea = targetRadius * targetRadius * Mathf.PI * pressureAmount;
             // Apply gas pressure if enabled
+            
             if (useGasPressure)
             {
                 currentArea = CalculateArea();
                 ApplyPressureForce();
+                //EnforceMaximumSize();
+                
             }
+            HandleCollisions1(solidObjects);
         }
 
         protected void CreatePerimeterSprings()
         {
+            
             for (int i = 0; i < points.Count; i++)
             {
                 int nextIndex = (i + 1) % points.Count;
@@ -55,17 +65,21 @@ namespace SoftBodyPhysics
 
         protected void CreateInternalSprings()
         {
-            for (int i = 0; i < points.Count; i++)
+            int totalPoints = points.Count;
+            int connectToNeighbors = 2; // Connect to the next 2 non-adjacent neighbors on each side
+
+            for (int i = 0; i < totalPoints; i++)
             {
-                for (int j = i + 2; j < points.Count; j++)
+                // Connect to the next few non-adjacent neighbors
+                for (int offset = 2; offset <= connectToNeighbors + 1; offset++)
                 {
-                    // Skip adjacent points (already handled by perimeter springs)
-                    if (j == (i + 1) % points.Count) continue;
+                    // Connect forward (clockwise)
+                    int forwardIndex = (i + offset) % totalPoints;
+                    constraints.Add(new SpringConstraint(points[i], points[forwardIndex], springStiffness * 0.5f, springDamping));
 
-                    // Also skip direct opposites for odd-numbered point counts
-                    if (points.Count % 2 == 1 && j == (i + points.Count / 2) % points.Count) continue;
-
-                    constraints.Add(new SpringConstraint(points[i], points[j], springStiffness * 0.5f, springDamping));
+                    // No need to connect backward (counterclockwise) since those connections
+                    // will be handled when we process the other points
+                    // This prevents duplicate springs
                 }
             }
         }
@@ -74,9 +88,22 @@ namespace SoftBodyPhysics
         {
             if (!useGasPressure) return;
 
-            // Calculate pressure error
+            // Calculate current area
+            currentArea = CalculateArea();
+            
+            // Calculate pressure error - WITH PROPER SIGN
             float areaError = targetArea * pressureAmount - currentArea;
+
+            // Add a safeguard against extreme expansion
+            areaError = Mathf.Clamp(areaError, -currentArea * 0.5f, currentArea * 0.5f);
+
             float pressureFactor = areaError / points.Count * pressureForce;
+
+            // Debug log to see what's happening
+            if (Time.frameCount % 60 == 0) // Log once per second
+            {
+                Debug.Log($"Area: Current={currentArea:F2}, Target={targetArea * pressureAmount:F2}, Error={areaError:F2}, Factor={pressureFactor:F2}");
+            }
 
             // Apply pressure to each point
             for (int i = 0; i < points.Count; i++)
@@ -132,8 +159,103 @@ namespace SoftBodyPhysics
                     }
                 }
             }
+
+
         }
 
+        public void HandleCollisions1(List<Collider2D> solidObjects)
+        {
+            // Track which colliders we're in contact with this frame
+            HashSet<Collider2D> currentColliders = new HashSet<Collider2D>();
+
+            foreach (PointMass point in points)
+            {
+                foreach (Collider2D collider in solidObjects)
+                {
+                    // Get the closest point on the collider's surface
+                    Vector2 closestPoint = collider.ClosestPoint(point.Position);
+                    float distance = Vector2.Distance(point.Position, closestPoint);
+
+                    // If the point is near or inside the collider
+                    if (distance < 0.1f || collider.OverlapPoint(point.Position))
+                    {
+                        // Add to our tracking set
+                        currentColliders.Add(collider);
+
+                        // Calculate normal direction
+                        Vector2 normal = (point.Position - closestPoint).normalized;
+
+                        // If normal is zero (point is inside), use direction from center
+                        if (normal.magnitude < 0.001f)
+                        {
+                            normal = (point.Position - (Vector2)collider.bounds.center).normalized;
+
+                            // If still zero, use a default direction
+                            if (normal.magnitude < 0.001f)
+                            {
+                                normal = Vector2.up;
+                            }
+                        }
+
+                        // Push the point out
+                        point.Position = closestPoint + normal * 0.1f;
+
+                        // Reflect velocity for bouncing
+                        Vector2 velocity = point.Position - point.PreviousPosition;
+                        Vector2 reflectedVelocity = Vector2.Reflect(velocity, normal) * 0.3f;
+                        point.PreviousPosition = point.Position - reflectedVelocity;
+
+                        
+                    }
+                }
+            }
+
+            
+
+            // Clean up colliders we're no longer in contact with
+            List<Collider2D> toRemove = new List<Collider2D>();
+            foreach (var kvp in lastColliderPositions)
+            {
+                if (!currentColliders.Contains(kvp.Key))
+                {
+                    toRemove.Add(kvp.Key);
+                }
+            }
+
+            foreach (var collider in toRemove)
+            {
+                lastColliderPositions.Remove(collider);
+            }
+        }
+
+       
+        protected void EnforceMaximumSize()
+        {
+            if (!useGasPressure) return;
+
+            // Calculate current radius (average distance from center)
+            Vector2 center = GetCenter();
+            float maxAllowedRadius = targetRadius * 2f; // Max 2x original size
+
+            float totalRadius = 0f;
+            foreach (var point in points)
+            {
+                float distance = Vector2.Distance(point.Position, center);
+                totalRadius += distance;
+            }
+            float avgRadius = totalRadius / points.Count;
+
+            // If the average radius is too large, scale all points inward
+            if (avgRadius > maxAllowedRadius)
+            {
+                float scaleFactor = maxAllowedRadius / avgRadius;
+                foreach (var point in points)
+                {
+                    Vector2 dirFromCenter = point.Position - center;
+                    point.Position = center + dirFromCenter * scaleFactor;
+                }
+            }
+        }
         // Visualization for debugging
         private void OnDrawGizmos()
         {

@@ -15,7 +15,7 @@ namespace SoftBodyPhysics
         public float linearDamping = 0.99f;
 
         [Header("Solver Settings")]
-        public int constraintIterations = 5;
+        public int constraintIterations = 10;
 
         protected List<IPointMass> points = new List<IPointMass>();
         protected List<IConstraint> constraints = new List<IConstraint>();
@@ -60,7 +60,7 @@ namespace SoftBodyPhysics
                 Vector2 gravity = SoftBodyPhysicsManager.Instance.gravityDirection * SoftBodyPhysicsManager.Instance.gravity;
                 foreach (var point in points)
                 {
-                    point.ApplyForce(gravity * point.Mass);
+                    point.ApplyForce((gravity * point.Mass) * 200);
                 }
             }
 

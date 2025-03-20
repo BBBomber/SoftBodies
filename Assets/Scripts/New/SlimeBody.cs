@@ -41,6 +41,13 @@ namespace SoftBodyPhysics
 
         private Bounds slimeBounds = new Bounds();
 
+        [Header("Advanced Spring Configuration")]
+        public bool enableShearSprings = true;
+        public float shearSpringStiffness = 0.8f;
+
+        // Store the shear spring rest lengths
+        private List<float> shearSpringRestLengths = new List<float>();
+
         protected override void Awake()
         {
             // Find solid objects in the scene
@@ -97,7 +104,7 @@ namespace SoftBodyPhysics
                 SlimePoints.Add(point);
                 points.Add(point);
             }
-
+            InitializeShearSprings();
             if (lineRenderer == null) // Protect against multiple initialization
             {
                 // Create a new child GameObject for the outline
@@ -156,7 +163,7 @@ namespace SoftBodyPhysics
             int substeps = constraintIterations;
             for (int j = 0; j < substeps; j++)
             {
-                if (enableSprings) ApplySpringForces();
+                if (enableSprings) ApplyAllSprings();
                 if (enablePressure) ApplyPressureForce();
                 if (enableJellyEffect) ApplyJellyConstraints();
 
@@ -615,6 +622,86 @@ namespace SoftBodyPhysics
             slimeBounds.SetMinMax(min, max);
         }
 
+        private void InitializeShearSprings()
+        {
+            if (!enableShearSprings)
+                return;
+
+            shearSpringRestLengths.Clear();
+
+            // Calculate rest lengths for shear springs
+            // These connect each point to the point that comes after its immediate neighbor
+            for (int i = 0; i < SlimePoints.Count; i++)
+            {
+                int shearIndex = (i + 2) % SlimePoints.Count; // Skip one point
+
+                Vector2 p1 = SlimePoints[i].Position;
+                Vector2 p2 = SlimePoints[shearIndex].Position;
+
+                float restLength = Vector2.Distance(p1, p2);
+                shearSpringRestLengths.Add(restLength);
+            }
+
+            Debug.Log($"Initialized {shearSpringRestLengths.Count} shear springs for SlimeBody");
+        }
+
+        private void ApplyShearSprings()
+        {
+            if (!enableShearSprings || shearSpringRestLengths.Count == 0)
+                return;
+
+            for (int i = 0; i < SlimePoints.Count; i++)
+            {
+                SlimePoint current = SlimePoints[i];
+                int shearIndex = (i + 2) % SlimePoints.Count; // Skip one point
+                SlimePoint shearNeighbor = SlimePoints[shearIndex];
+
+                Vector2 diff = shearNeighbor.Position - current.Position;
+                float currentDistance = diff.magnitude;
+                float restLength = shearSpringRestLengths[i];
+
+                if (currentDistance != 0f) // Prevent division by zero
+                {
+                    float error = (currentDistance - restLength) * shearSpringStiffness;
+                    Vector2 correction = diff.normalized * error * 0.5f; // Split correction between both points
+
+                    current.ApplyDisplacement(correction);
+                    shearNeighbor.ApplyDisplacement(-correction);
+                }
+            }
+        }
+
+        // Modified version of your ApplySpringForces method to integrate shear springs
+        private void ApplyAllSprings()
+        {
+            // Original structural springs (edge springs)
+            for (int i = 0; i < SlimePoints.Count; i++)
+            {
+                SlimePoint cur = SlimePoints[i];
+                SlimePoint next = SlimePoints[i == SlimePoints.Count - 1 ? 0 : i + 1];
+
+                Vector2 diff = next.Position - cur.Position;
+                float distance = diff.magnitude;
+
+                if (distance > chordLength)
+                {
+                    float error = (distance - chordLength) / 2f;
+                    Vector2 offset = diff.normalized * error;
+                    cur.ApplyDisplacement(offset);
+                    next.ApplyDisplacement(-offset);
+                }
+            }
+
+            // Apply shear springs
+            if (enableShearSprings)
+            {
+                ApplyShearSprings();
+            }
+        }
+
     }
+
+   
+
 
 }

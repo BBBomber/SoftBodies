@@ -158,7 +158,7 @@ MonoBehaviour:
   showPressureForces: 1
   numPoints: 14
   radius: 0.5
-  puffiness: 1
+  puffiness: 2
   bounceFactor: 0.8
   jellyStrength: 0.1
   maxVelocity: 3
@@ -172,6 +172,8 @@ MonoBehaviour:
   lineWidth: 0.1
   solidObjects: []
   otherSlimes: []
+  enableShearSprings: 1
+  shearSpringStiffness: 0.8
 --- !u!4 &20672919
 Transform:
   m_ObjectHideFlags: 0
@@ -256,6 +258,8 @@ MonoBehaviour:
   lineWidth: 0.05
   solidObjects: []
   otherSlimes: []
+  enableShearSprings: 1
+  shearSpringStiffness: 0.8
 --- !u!114 &123789633
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -378,7 +382,7 @@ MonoBehaviour:
   showPressureForces: 1
   numPoints: 14
   radius: 0.5
-  puffiness: 1
+  puffiness: 2
   bounceFactor: 0.8
   jellyStrength: 0.1
   maxVelocity: 3
@@ -392,6 +396,8 @@ MonoBehaviour:
   lineWidth: 0.1
   solidObjects: []
   otherSlimes: []
+  enableShearSprings: 1
+  shearSpringStiffness: 0.8
 --- !u!4 &355164312
 Transform:
   m_ObjectHideFlags: 0
@@ -568,7 +574,7 @@ MonoBehaviour:
   showPressureForces: 1
   numPoints: 14
   radius: 0.5
-  puffiness: 1
+  puffiness: 2
   bounceFactor: 0.8
   jellyStrength: 0.1
   maxVelocity: 3
@@ -582,6 +588,8 @@ MonoBehaviour:
   lineWidth: 0.1
   solidObjects: []
   otherSlimes: []
+  enableShearSprings: 1
+  shearSpringStiffness: 0.8
 --- !u!4 &635250303
 Transform:
   m_ObjectHideFlags: 0
@@ -651,7 +659,7 @@ MonoBehaviour:
   showPressureForces: 1
   numPoints: 14
   radius: 0.5
-  puffiness: 1
+  puffiness: 2
   bounceFactor: 0.8
   jellyStrength: 0.1
   maxVelocity: 3
@@ -665,6 +673,8 @@ MonoBehaviour:
   lineWidth: 0.1
   solidObjects: []
   otherSlimes: []
+  enableShearSprings: 1
+  shearSpringStiffness: 0.8
 --- !u!1 &982025593
 GameObject:
   m_ObjectHideFlags: 0
@@ -874,7 +884,7 @@ MonoBehaviour:
   showPressureForces: 1
   numPoints: 14
   radius: 0.5
-  puffiness: 1
+  puffiness: 2
   bounceFactor: 0.8
   jellyStrength: 0.1
   maxVelocity: 3
@@ -888,6 +898,8 @@ MonoBehaviour:
   lineWidth: 0.1
   solidObjects: []
   otherSlimes: []
+  enableShearSprings: 1
+  shearSpringStiffness: 0.8
 --- !u!4 &1189893580
 Transform:
   m_ObjectHideFlags: 0
@@ -1241,7 +1253,7 @@ MonoBehaviour:
   showPressureForces: 1
   numPoints: 14
   radius: 0.5
-  puffiness: 1
+  puffiness: 2
   bounceFactor: 0.8
   jellyStrength: 0.1
   maxVelocity: 3
@@ -1255,6 +1267,8 @@ MonoBehaviour:
   lineWidth: 0.1
   solidObjects: []
   otherSlimes: []
+  enableShearSprings: 1
+  shearSpringStiffness: 0.8
 --- !u!4 &1681903272
 Transform:
   m_ObjectHideFlags: 0

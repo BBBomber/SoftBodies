@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 namespace SoftBodyPhysics
@@ -38,11 +39,13 @@ namespace SoftBodyPhysics
         [SerializeField] private List<Collider2D> solidObjects = new List<Collider2D>();
         [SerializeField] private List<SlimeBody> otherSlimes = new List<SlimeBody>();
 
+        private Bounds slimeBounds = new Bounds();
+
         protected override void Awake()
         {
             // Find solid objects in the scene
             solidObjects.AddRange(FindObjectsByType<Collider2D>(FindObjectsSortMode.None));
-
+            otherSlimes.AddRange(FindObjectsByType<SlimeBody>(FindObjectsSortMode.None));
             // Initialize the slime
             base.Awake();
         }
@@ -171,6 +174,7 @@ namespace SoftBodyPhysics
 
             // Update transform position based on center
             transform.position = GetCenter();
+            UpdateBounds();
         }
 
         private void ApplySpringForces() //stores the displacement amount for each point
@@ -315,7 +319,7 @@ namespace SoftBodyPhysics
             }
         }
 
-        private void HandleSlimeCollisions(List<SlimeBody> otherSlimes)
+       /* private void HandleSlimeCollisions(List<SlimeBody> otherSlimes)
         {
             foreach (SlimeBody other in otherSlimes)
             {
@@ -336,6 +340,188 @@ namespace SoftBodyPhysics
                     }
                 }
             }
+        }*/
+
+        // Replace your current HandleSlimeCollisions with this improved version
+        private void HandleSlimeCollisions(List<SlimeBody> otherSlimes)
+        {
+            // Update our bounds first
+            UpdateBounds();
+
+            foreach (SlimeBody otherSlime in otherSlimes)
+            {
+                if (otherSlime == this) continue; // Don't collide with itself
+
+                // Update other slime's bounds
+                otherSlime.UpdateBounds();
+
+                // Quick bounds check first (optimization)
+                if (!slimeBounds.Intersects(otherSlime.slimeBounds))
+                    continue;
+
+                // Check each point of this slime against the other slime
+                foreach (SlimePoint point in SlimePoints)
+                {
+                    if (IsPointInsideSlime(point.Position, otherSlime))
+                    {
+                        // Find the closest edge and resolve collision
+                        ResolvePointSlimeCollision(point, otherSlime);
+                    }
+                }
+
+                // Check points of the other slime against this slime (for symmetry)
+                foreach (SlimePoint point in otherSlime.SlimePoints)
+                {
+                    if (IsPointInsideSlime(point.Position, this))
+                    {
+                        // Find the closest edge and resolve collision
+                        ResolvePointSlimeCollision(point, this);
+                    }
+                }
+            }
+        }
+
+        // Determines if a point is inside another slime using the even-odd rule
+        private bool IsPointInsideSlime(Vector2 testPoint, SlimeBody slime)
+        {
+            // First do a quick bounds check
+            if (!slime.slimeBounds.Contains(testPoint))
+                return false;
+
+            // Use the ray casting algorithm (even-odd rule)
+            bool inside = false;
+
+            // Get a point guaranteed to be outside the slime
+            Vector2 outsidePoint = new Vector2(slime.slimeBounds.max.x + 1.0f, testPoint.y);
+
+            int pointCount = slime.SlimePoints.Count;
+            for (int i = 0, j = pointCount - 1; i < pointCount; j = i++)
+            {
+                Vector2 vertI = slime.SlimePoints[i].Position;
+                Vector2 vertJ = slime.SlimePoints[j].Position;
+
+                // Check if the edge intersects with the horizontal ray
+                if (((vertI.y > testPoint.y) != (vertJ.y > testPoint.y)) &&
+                    (testPoint.x < (vertJ.x - vertI.x) * (testPoint.y - vertI.y) / (vertJ.y - vertI.y) + vertI.x))
+                {
+                    inside = !inside;
+                }
+            }
+
+            return inside;
+        }
+
+        // Resolves collision by finding the closest edge and pushing the point out
+        private void ResolvePointSlimeCollision(SlimePoint point, SlimeBody slime)
+        {
+            // Find the closest edge of the slime
+            float minDistance = float.MaxValue;
+            int closestEdgeIndex = 0;
+            Vector2 closestEdgePoint = Vector2.zero;
+
+            int pointCount = slime.SlimePoints.Count;
+            for (int i = 0; i < pointCount; i++)
+            {
+                int j = (i + 1) % pointCount;
+
+                Vector2 edgeStarte = slime.SlimePoints[i].Position;
+                Vector2 edgeEnde = slime.SlimePoints[j].Position;
+
+                Vector2 edgePoint = ClosestPointOnLineSegment(point.Position, edgeStarte, edgeEnde);
+                float distance = Vector2.Distance(point.Position, edgePoint);
+
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    closestEdgeIndex = i;
+                    closestEdgePoint = edgePoint;
+                }
+            }
+
+            // Calculate how close we are to each vertex of the edge
+            int nextIndex = (closestEdgeIndex + 1) % pointCount;
+            Vector2 edgeStart = slime.SlimePoints[closestEdgeIndex].Position;
+            Vector2 edgeEnd = slime.SlimePoints[nextIndex].Position;
+
+            float totalEdgeLength = Vector2.Distance(edgeStart, edgeEnd);
+            float ratioToStart = Vector2.Distance(closestEdgePoint, edgeStart) / totalEdgeLength;
+            float ratioToEnd = 1.0f - ratioToStart;
+
+            // Calculate the normal direction (away from the slime)
+            Vector2 edgeDirection = (edgeEnd - edgeStart).normalized;
+            Vector2 edgeNormal = new Vector2(-edgeDirection.y, edgeDirection.x);
+
+            // Make sure the normal points outward from the slime
+            Vector2 slimeCenter = slime.GetCenter();
+            if (Vector2.Dot(edgeNormal, closestEdgePoint - slimeCenter) < 0)
+            {
+                edgeNormal = -edgeNormal;
+            }
+
+            // Calculate penetration depth
+            float penetration = minDistance + 0.05f; // Add a small buffer
+
+            // Calculate effective mass
+            float pointMass = point.Mass;
+            float edgeStartMass = slime.SlimePoints[closestEdgeIndex].Mass;
+            float edgeEndMass = slime.SlimePoints[nextIndex].Mass;
+            float totalMass = pointMass + (edgeStartMass * ratioToStart) + (edgeEndMass * ratioToEnd);
+
+            // Calculate displacement proportions based on mass
+            float pointProportion = pointMass / totalMass;
+            float edgeStartProportion = (edgeStartMass * ratioToStart) / totalMass;
+            float edgeEndProportion = (edgeEndMass * ratioToEnd) / totalMass;
+
+            // Apply displacements
+            point.ApplyDisplacement(edgeNormal * penetration * (1.0f - pointProportion));
+            slime.SlimePoints[closestEdgeIndex].ApplyDisplacement(-edgeNormal * penetration * edgeStartProportion);
+            slime.SlimePoints[nextIndex].ApplyDisplacement(-edgeNormal * penetration * edgeEndProportion);
+
+            // Handle velocity reflection
+            Vector2 pointVelocity = point.Position - point.PreviousPosition;
+
+            // Calculate the velocity of the edge point
+            Vector2 edgeVelocity =
+                (slime.SlimePoints[closestEdgeIndex].Position - slime.SlimePoints[closestEdgeIndex].PreviousPosition) * ratioToStart +
+                (slime.SlimePoints[nextIndex].Position - slime.SlimePoints[nextIndex].PreviousPosition) * ratioToEnd;
+
+            // Calculate relative velocity
+            Vector2 relativeVelocity = pointVelocity - edgeVelocity;
+
+            // Calculate reflection
+            float normalDot = Vector2.Dot(relativeVelocity, edgeNormal);
+            if (normalDot < 0) // Only reflect if moving toward the edge
+            {
+                Vector2 reflectionVector = -2 * normalDot * edgeNormal;
+                Vector2 reflectedVelocity = relativeVelocity + reflectionVector;
+
+                // Apply bounciness
+                reflectedVelocity *= slime.bounceFactor;
+
+                // Update point's previous position to affect velocity
+                point.PreviousPosition = point.Position - reflectedVelocity;
+
+                // Apply reaction force to edge points
+                Vector2 reactionForce = -reflectedVelocity * pointMass / 2.0f; // Divide by 2 to dampen reaction
+
+                // Distribute the reaction force to edge points
+                Vector2 edgeStartForce = reactionForce * ratioToStart;
+                Vector2 edgeEndForce = reactionForce * ratioToEnd;
+
+                slime.SlimePoints[closestEdgeIndex].PreviousPosition += edgeStartForce / edgeStartMass;
+                slime.SlimePoints[nextIndex].PreviousPosition += edgeEndForce / edgeEndMass;
+            }
+        }
+
+        // Helper method to find closest point on a line segment
+        private Vector2 ClosestPointOnLineSegment(Vector2 point, Vector2 lineStart, Vector2 lineEnd)
+        {
+            Vector2 lineDirection = lineEnd - lineStart;
+            float lineLength = lineDirection.magnitude;
+            lineDirection.Normalize();
+
+            float projectLength = Mathf.Clamp(Vector2.Dot(point - lineStart, lineDirection), 0, lineLength);
+            return lineStart + (lineDirection * projectLength);
         }
 
         public override void HandleCollision(ISoftBodyObject other)
@@ -405,6 +591,28 @@ namespace SoftBodyPhysics
                 SlimePoints[i].Position = newPos;
                 SlimePoints[i].PreviousPosition = newPos;
             }
+        }
+
+        // Call this method at the end of UpdatePhysics
+        private void UpdateBounds()
+        {
+            // Calculate the bounding box for this slime
+            Vector2 min = SlimePoints[0].Position;
+            Vector2 max = SlimePoints[0].Position;
+
+            foreach (var point in SlimePoints)
+            {
+                min.x = Mathf.Min(min.x, point.Position.x);
+                min.y = Mathf.Min(min.y, point.Position.y);
+                max.x = Mathf.Max(max.x, point.Position.x);
+                max.y = Mathf.Max(max.y, point.Position.y);
+            }
+
+            // Add a small margin
+            min -= Vector2.one * 0.1f;
+            max += Vector2.one * 0.1f;
+
+            slimeBounds.SetMinMax(min, max);
         }
 
     }

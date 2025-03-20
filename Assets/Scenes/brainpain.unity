@@ -152,12 +152,12 @@ MonoBehaviour:
   collisionLayer: 0
   mass: 1
   linearDamping: 0.99
-  constraintIterations: 10
-  targetPressure: 20
-  pressureForce: 2
+  constraintIterations: 20
+  targetPressure: 18
+  pressureForce: 6
   showPressureForces: 1
-  numPoints: 12
-  radius: 1
+  numPoints: 14
+  radius: 0.5
   puffiness: 1
   bounceFactor: 0.8
   jellyStrength: 0.1
@@ -236,13 +236,13 @@ MonoBehaviour:
   collisionLayer: 0
   mass: 1
   linearDamping: 0.99
-  constraintIterations: 10
+  constraintIterations: 20
   targetPressure: 20
   pressureForce: 2
   showPressureForces: 1
-  numPoints: 16
+  numPoints: 26
   radius: 1
-  puffiness: 1.5
+  puffiness: 2.5
   bounceFactor: 0.8
   jellyStrength: 0.1
   maxVelocity: 3
@@ -253,7 +253,7 @@ MonoBehaviour:
   enableCollisions: 1
   enableSoftBodyCollisions: 0
   fillColor: {r: 0.018082717, g: 0.98490566, b: 0.005574857, a: 1}
-  lineWidth: 0.1
+  lineWidth: 0.05
   solidObjects: []
   otherSlimes: []
 --- !u!114 &123789633
@@ -372,12 +372,12 @@ MonoBehaviour:
   collisionLayer: 0
   mass: 1
   linearDamping: 0.99
-  constraintIterations: 10
-  targetPressure: 20
-  pressureForce: 2
+  constraintIterations: 20
+  targetPressure: 18
+  pressureForce: 6
   showPressureForces: 1
-  numPoints: 12
-  radius: 1
+  numPoints: 14
+  radius: 0.5
   puffiness: 1
   bounceFactor: 0.8
   jellyStrength: 0.1
@@ -401,7 +401,7 @@ Transform:
   m_GameObject: {fileID: 355164310}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.31, y: 14.69, z: 0}
+  m_LocalPosition: {x: -7.5, y: 6.3, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -562,12 +562,12 @@ MonoBehaviour:
   collisionLayer: 0
   mass: 1
   linearDamping: 0.99
-  constraintIterations: 10
-  targetPressure: 20
-  pressureForce: 2
+  constraintIterations: 20
+  targetPressure: 18
+  pressureForce: 6
   showPressureForces: 1
-  numPoints: 12
-  radius: 1
+  numPoints: 14
+  radius: 0.5
   puffiness: 1
   bounceFactor: 0.8
   jellyStrength: 0.1
@@ -645,12 +645,12 @@ MonoBehaviour:
   collisionLayer: 0
   mass: 1
   linearDamping: 0.99
-  constraintIterations: 10
-  targetPressure: 20
-  pressureForce: 2
+  constraintIterations: 20
+  targetPressure: 18
+  pressureForce: 6
   showPressureForces: 1
-  numPoints: 12
-  radius: 1
+  numPoints: 14
+  radius: 0.5
   puffiness: 1
   bounceFactor: 0.8
   jellyStrength: 0.1
@@ -868,12 +868,12 @@ MonoBehaviour:
   collisionLayer: 0
   mass: 1
   linearDamping: 0.99
-  constraintIterations: 10
-  targetPressure: 20
-  pressureForce: 2
+  constraintIterations: 20
+  targetPressure: 18
+  pressureForce: 6
   showPressureForces: 1
-  numPoints: 12
-  radius: 1
+  numPoints: 14
+  radius: 0.5
   puffiness: 1
   bounceFactor: 0.8
   jellyStrength: 0.1
@@ -897,7 +897,7 @@ Transform:
   m_GameObject: {fileID: 1189893578}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.6, y: 53.7, z: 0}
+  m_LocalPosition: {x: -9.6, y: 5.7, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1235,12 +1235,12 @@ MonoBehaviour:
   collisionLayer: 0
   mass: 1
   linearDamping: 0.99
-  constraintIterations: 10
-  targetPressure: 20
-  pressureForce: 2
+  constraintIterations: 20
+  targetPressure: 18
+  pressureForce: 6
   showPressureForces: 1
-  numPoints: 12
-  radius: 1
+  numPoints: 14
+  radius: 0.5
   puffiness: 1
   bounceFactor: 0.8
   jellyStrength: 0.1
@@ -1264,7 +1264,7 @@ Transform:
   m_GameObject: {fileID: 1681903270}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.31, y: 23.22, z: 0}
+  m_LocalPosition: {x: -9.2, y: -2.6, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

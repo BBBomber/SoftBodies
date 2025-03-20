@@ -159,7 +159,7 @@ namespace SoftBodyPhysics
 
                 foreach (SlimePoint point in SlimePoints)
                 {
-                    point.ApplyDisplacement();
+                    point.ApplyDisplacement(); //applies stored displacement values
                     if (enableSpringDragging)
                         point.HandleMouseInteraction(mousePosition, 1f, isRightMousePressed, isRightMouseReleased);
                     point.KeepInBounds(screenBounds);
@@ -173,7 +173,7 @@ namespace SoftBodyPhysics
             transform.position = GetCenter();
         }
 
-        private void ApplySpringForces()
+        private void ApplySpringForces() //stores the displacement amount for each point
         {
             for (int i = 0; i < SlimePoints.Count; i++)
             {

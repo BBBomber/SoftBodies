@@ -287,7 +287,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &595837546
 Transform:
   m_ObjectHideFlags: 0
@@ -393,6 +393,74 @@ MonoBehaviour:
   velocityColor: {r: 0, g: 1, b: 0, a: 1}
   gravityColor: {r: 0, g: 0, b: 1, a: 1}
   pressureColor: {r: 1, g: 0, b: 1, a: 1}
+--- !u!1 &766077742
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 766077743}
+  - component: {fileID: 766077744}
+  m_Layer: 0
+  m_Name: slime 2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &766077743
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 766077742}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -12.638291, y: -38.226616, z: -9.919692}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &766077744
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 766077742}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: babde3122bc4e4b4b9b525f01a3e45ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  isCollidable: 1
+  collisionLayer: 0
+  mass: 1
+  linearDamping: 0.99
+  constraintIterations: 10
+  targetPressure: 20
+  pressureForce: 2
+  showPressureForces: 1
+  numPoints: 12
+  radius: 1
+  puffiness: 1
+  bounceFactor: 0.8
+  jellyStrength: 0.1
+  maxVelocity: 3
+  enableSprings: 1
+  enablePressure: 1
+  enableJellyEffect: 0
+  enableSpringDragging: 1
+  enableCollisions: 1
+  enableSoftBodyCollisions: 1
+  fillColor: {r: 0.3, g: 0.8, b: 1, a: 0.7}
+  lineWidth: 0.1
+  solidObjects: []
+  otherSlimes: []
 --- !u!1 &982025593
 GameObject:
   m_ObjectHideFlags: 0
@@ -1110,3 +1178,4 @@ SceneRoots:
   - {fileID: 623042915}
   - {fileID: 595837546}
   - {fileID: 146712216}
+  - {fileID: 766077743}

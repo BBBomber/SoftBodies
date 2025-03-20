@@ -60,7 +60,7 @@ namespace SoftBodyPhysics
                 Vector2 gravity = SoftBodyPhysicsManager.Instance.gravityDirection * SoftBodyPhysicsManager.Instance.gravity;
                 foreach (var point in points)
                 {
-                    point.ApplyForce((gravity * point.Mass) * 200);
+                    point.ApplyForce(gravity * point.Mass);
                 }
             }
 
